@@ -5,6 +5,8 @@ import type {
   MarketDetail,
   MarketListParams,
   MarketListResponse,
+  MarketPriceHistoryParams,
+  MarketPriceHistoryResponse,
 } from "../model/market.types";
 
 export async function getMarketList(
@@ -23,6 +25,18 @@ export async function getMarketDetail(
 ): Promise<MarketDetail> {
   const response = await httpClient.get<ApiResponse<MarketDetail>>(
     `/api/v1/markets/${marketId}`,
+  );
+
+  return response.data.data;
+}
+
+export async function getMarketPriceHistory(
+  marketId: number,
+  params: MarketPriceHistoryParams = {},
+): Promise<MarketPriceHistoryResponse> {
+  const response = await httpClient.get<ApiResponse<MarketPriceHistoryResponse>>(
+    `/api/v1/markets/${marketId}/price-history`,
+    { params },
   );
 
   return response.data.data;
