@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
+import { MarketPredictionQuotePanel } from "@/entities/market/ui/MarketPredictionQuotePanel";
 import { MarketSettlementRuleCard } from "@/entities/market/ui/MarketSettlementRuleCard";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 import { isApiError } from "@/shared/api/apiError";
@@ -95,6 +96,12 @@ export default function MarketDetailPage() {
 
             <MarketSettlementRuleCard market={data} />
           </div>
+
+          <MarketPredictionQuotePanel
+            marketId={data.marketId}
+            options={data.options}
+            marketStatus={data.status}
+          />
 
           <MarketPriceHistorySection
             marketId={data.marketId}

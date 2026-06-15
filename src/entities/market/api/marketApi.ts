@@ -7,6 +7,8 @@ import type {
   MarketListResponse,
   MarketPriceHistoryParams,
   MarketPriceHistoryResponse,
+  MarketPredictionQuoteRequest,
+  MarketPredictionQuoteResponse,
 } from "../model/market.types";
 
 export async function getMarketList(
@@ -38,6 +40,17 @@ export async function getMarketPriceHistory(
     `/api/v1/markets/${marketId}/price-history`,
     { params },
   );
+
+  return response.data.data;
+}
+
+export async function getMarketPredictionQuote(
+  marketId: number,
+  request: MarketPredictionQuoteRequest,
+): Promise<MarketPredictionQuoteResponse> {
+  const response = await httpClient.post<
+    ApiResponse<MarketPredictionQuoteResponse>
+  >(`/api/v1/markets/${marketId}/predictions/quote`, request);
 
   return response.data.data;
 }
