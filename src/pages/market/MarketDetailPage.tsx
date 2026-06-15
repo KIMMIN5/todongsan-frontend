@@ -1,11 +1,14 @@
 import { useParams } from "react-router-dom";
 
+import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
 import { MarketPredictionQuotePanel } from "@/entities/market/ui/MarketPredictionQuotePanel";
 import { MarketSettlementRuleCard } from "@/entities/market/ui/MarketSettlementRuleCard";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
+import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
+import { MyMarketPredictionCard } from "@/entities/prediction/ui/MyMarketPredictionCard";
 import { isApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -17,6 +20,7 @@ import { Skeleton } from "@/shared/ui/skeleton";
 
 export default function MarketDetailPage() {
   const { marketId } = useParams<{ marketId: string }>();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isValidMarketId = marketId !== undefined && /^\d+$/.test(marketId);
   const parsedMarketId = isValidMarketId ? Number(marketId) : 0;
   const { data, error, isError, isLoading, refetch } =
@@ -103,6 +107,12 @@ export default function MarketDetailPage() {
             marketStatus={data.status}
           />
 
+          <MyPredictionSection
+            marketId={data.marketId}
+            options={data.options}
+            enabled={isAuthenticated || hasDevMemberId()}
+          />
+
           <MarketPriceHistorySection
             marketId={data.marketId}
             options={data.options}
@@ -111,6 +121,123 @@ export default function MarketDetailPage() {
       )}
     </PageContainer>
   );
+}
+
+type MyPredictionSectionProps = {
+  marketId: number;
+  options: {
+    optionId: number;
+    content: string;
+  }[];
+  enabled: boolean;
+};
+
+function MyPredictionSection({
+  marketId,
+  options,
+  enabled,
+}: MyPredictionSectionProps) {
+  const { data, error, isError, isLoading, refetch } =
+    useMyMarketPredictionQuery(marketId, { enabled });
+
+  if (!enabled) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>내 예측 상태</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            title="로그인하면 내 예측 상태를 확인할 수 있습니다"
+            description="로그인하거나 로컬 개발용 회원 ID를 설정한 뒤 다시 확인해 주세요."
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>내 예측 상태</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    if (isApiError(error) && error.errorCode === "MARKET_PREDICTION_NOT_FOUND") {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>내 예측 상태</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EmptyState
+              title="아직 이 마켓에 참여하지 않았습니다"
+              description="예측 참여 후 내 예측 상태가 이곳에 표시됩니다."
+            />
+          </CardContent>
+        </Card>
+      );
+    }
+
+    const errorMessage = isApiError(error)
+      ? error.message
+      : error instanceof Error
+      ? error.message
+      : "내 예측 상태를 불러오는 중 문제가 발생했습니다.";
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>내 예측 상태</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ErrorState
+            message={errorMessage}
+            action={<Button onClick={() => refetch()}>다시 시도</Button>}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>내 예측 상태</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            title="아직 이 마켓에 참여하지 않았습니다"
+            description="예측 참여 후 내 예측 상태가 이곳에 표시됩니다."
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const selectedOptionLabel = options.find(
+    (option) => option.optionId === data.selectedOptionId,
+  )?.content;
+
+  return (
+    <MyMarketPredictionCard
+      prediction={data}
+      selectedOptionLabel={selectedOptionLabel}
+    />
+  );
+}
+
+function hasDevMemberId() {
+  return Boolean(import.meta.env.DEV && import.meta.env.VITE_DEV_MEMBER_ID);
 }
 
 function MarketDetailSkeleton() {

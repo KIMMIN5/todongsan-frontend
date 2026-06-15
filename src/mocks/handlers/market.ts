@@ -215,22 +215,37 @@ export const marketHandlers = [
   }),
 
   // 내 예측 상태 조회
-  http.get('/api/v1/markets/:marketId/predictions/me', () => {
+  http.get('/api/v1/markets/:marketId/predictions/me', ({ request, params }) => {
+    const url = new URL(request.url);
+    const marketId = Number(params.marketId);
+
+    if (url.searchParams.get('empty') === 'true') {
+      return HttpResponse.json(
+        {
+          success: false,
+          errorCode: 'MARKET_PREDICTION_NOT_FOUND',
+          message: '내 예측 참여를 찾을 수 없습니다.',
+          data: null,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 404 },
+      );
+    }
+
     return HttpResponse.json({
       success: true,
       errorCode: null,
       message: null,
       data: {
         predictionId: 1,
-        marketId: 1,
-        optionId: 1,
+        marketId,
+        selectedOptionId: 1,
         pointAmount: '100.00',
         priceSnapshot: '0.65432100',
         contractQuantity: '1.52876234',
-        fee: '1.00',
         status: 'CONFIRMED',
-        estimatedSettlementAmount: '152.88',
         createdAt: '2024-12-10T15:30:00',
+        updatedAt: '2024-12-10T15:30:00',
       },
       timestamp: new Date().toISOString(),
     });
