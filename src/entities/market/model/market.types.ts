@@ -20,6 +20,11 @@ export type MarketPriceHistoryParams = {
   optionId?: number;
 };
 
+export type MarketPredictionQuoteRequest = {
+  marketOptionId: number;
+  pointAmount: string;
+};
+
 export type MarketListResponse = {
   content: MarketSummary[];
   page: number;
@@ -76,4 +81,19 @@ export type MarketPriceHistoryItem = {
   contractQuantityBefore: string;
   contractQuantityAfter: string;
   createdAt: string;
+};
+
+export type MarketPredictionQuoteResponse = {
+  marketId: number;
+  selectedOptionId: number;
+  pointAmount: string;
+  currentPrice: string;
+  estimatedContractQuantity: string;
+  estimatedAfterPrice: string;
+  priceImpactRate: string;
+  selectedOptionEffectivePoolBefore: string;
+  selectedOptionEffectivePoolAfter: string;
+  totalEffectivePoolBefore: string;
+  totalEffectivePoolAfter: string;
+  notice: string;
 };

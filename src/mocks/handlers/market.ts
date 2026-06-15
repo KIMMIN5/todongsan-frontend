@@ -17,7 +17,7 @@ export const marketHandlers = [
             marketId: 1,
             title: '2024년 강남구 아파트 평균 가격 상승률',
             status: 'ACTIVE',
-            closeAt: '2024-12-31T23:59:59',
+            closeAt: '2026-12-31T23:59:59',
             totalPoolAmount: '15000.00',
             options: [
               {
@@ -56,8 +56,8 @@ export const marketHandlers = [
         title: '2024년 강남구 아파트 평균 가격 상승률',
         description: '2024년 12월 기준 강남구 아파트 평균 가격이 전년 대비 몇 % 상승할까요?',
         status: 'ACTIVE',
-        closeAt: '2024-12-31T23:59:59',
-        resultAnnounceAt: '2025-01-15T00:00:00',
+        closeAt: '2026-12-31T23:59:59',
+        resultAnnounceAt: '2027-01-15T00:00:00',
         totalPoolAmount: '15000.00',
         options: [
           {
@@ -161,19 +161,33 @@ export const marketHandlers = [
   }),
 
   // 예측 견적 요청
-  http.post('/api/v1/markets/:marketId/predictions/quote', () => {
+  http.post('/api/v1/markets/:marketId/predictions/quote', async ({ request, params }) => {
+    const marketId = Number(params.marketId);
+    const body = await request.json() as {
+      marketOptionId?: number;
+      pointAmount?: string;
+    };
+    const selectedOptionId = body.marketOptionId ?? 1;
+    const pointAmount = body.pointAmount ?? '100.00';
+
     return HttpResponse.json({
       success: true,
       errorCode: null,
       message: null,
       data: {
-        optionId: 1,
-        pointAmount: '100.00',
-        estimatedPrice: '0.65432100',
+        marketId,
+        selectedOptionId,
+        pointAmount,
+        currentPrice: '0.65432100',
         estimatedContractQuantity: '1.52876234',
-        estimatedFee: '1.00',
-        estimatedSettlementAmount: '152.88',
-        quoteValidUntil: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5분 후
+        estimatedAfterPrice: '0.68932100',
+        priceImpactRate: '3.50000000',
+        selectedOptionEffectivePoolBefore: '33000.00',
+        selectedOptionEffectivePoolAfter: '33100.00',
+        totalEffectivePoolBefore: '65000.00',
+        totalEffectivePoolAfter: '65100.00',
+        notice:
+          '현재 가격은 실시간으로 변동될 수 있으며, 실제 참여 시점의 가격 기준으로 계약 수량이 확정됩니다.',
       },
       timestamp: new Date().toISOString(),
     });
