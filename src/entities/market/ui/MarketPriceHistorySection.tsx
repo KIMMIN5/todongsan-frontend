@@ -3,7 +3,7 @@ import { TrendingUp } from "lucide-react";
 
 import { isApiError } from "@/shared/api/apiError";
 import { formatDateTime } from "@/shared/lib/formatDate";
-import { formatPercent } from "@/shared/lib/formatDecimal";
+import { formatMarketPrice, formatPercent } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -140,7 +140,7 @@ function MarketPriceHistoryList({ items }: MarketPriceHistoryListProps) {
                     : "mt-1 text-xs font-medium text-emerald-700"
                 }
               >
-                {formatPercent(item.priceChangeRate)}
+                {formatPercentPoint(item.priceChangeRate)}
               </p>
             </div>
           </div>
@@ -148,6 +148,11 @@ function MarketPriceHistoryList({ items }: MarketPriceHistoryListProps) {
       ))}
     </div>
   );
+}
+
+function formatPercentPoint(value: string | null | undefined): string {
+  const formatted = formatMarketPrice(value);
+  return formatted === "-" ? "-" : `${formatted}%`;
 }
 
 function MarketPriceHistorySkeleton() {
