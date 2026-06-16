@@ -68,6 +68,21 @@ export type MyMarketPrediction = {
   updatedAt: string;
 };
 
+export type CreateMarketPredictionRequest = {
+  marketOptionId: number;
+  pointAmount: string;
+};
+
+export type CreateMarketPredictionResponse = {
+  predictionId: number;
+  marketId: number;
+  selectedOptionId: number;
+  pointAmount: string;
+  priceSnapshot: string | null;
+  contractQuantity: string | null;
+  status: PredictionStatus;
+};
+
 // 내 예측 목록 요청 파라미터
 export interface MyPredictionListParams {
   page?: number;
