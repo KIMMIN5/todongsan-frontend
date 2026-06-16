@@ -5,12 +5,20 @@ import type {
 
 export const marketKeys = {
   all: ["markets"] as const,
+
+  lists: () => [...marketKeys.all, "list"] as const,
   list: (params: MarketListParams) =>
-    [...marketKeys.all, "list", params] as const,
+    [...marketKeys.lists(), params] as const,
+
+  details: () => [...marketKeys.all, "detail"] as const,
   detail: (marketId: number) =>
-    [...marketKeys.all, "detail", marketId] as const,
+    [...marketKeys.details(), marketId] as const,
+
+  priceHistories: () => [...marketKeys.all, "price-history"] as const,
+  priceHistoryRoot: (marketId: number) =>
+    [...marketKeys.priceHistories(), marketId] as const,
   priceHistory: (
     marketId: number,
     params: MarketPriceHistoryParams = {},
-  ) => [...marketKeys.all, "price-history", marketId, params] as const,
+  ) => [...marketKeys.priceHistoryRoot(marketId), params] as const,
 };

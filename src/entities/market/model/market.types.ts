@@ -7,6 +7,16 @@ export type MarketStatus =
   | "SETTLED"
   | "VOIDED";
 
+export type MarketDisplayStatus =
+  | "PENDING"
+  | "ACTIVE"
+  | "CLOSED_BY_TIME"
+  | "DATA_PENDING"
+  | "CLOSED"
+  | "SETTLEMENT_IN_PROGRESS"
+  | "SETTLED"
+  | "VOIDED";
+
 export type MarketListParams = {
   page?: number;
   size?: number;
@@ -38,6 +48,8 @@ export type MarketSummary = {
   marketId: number;
   title: string;
   status: MarketStatus;
+  canPredict: boolean;
+  displayStatus: MarketDisplayStatus;
   closeAt: string;
   totalPoolAmount: string;
   options: MarketOption[];
@@ -46,6 +58,7 @@ export type MarketSummary = {
 export type MarketOption = {
   optionId: number;
   content: string;
+  initialPrice?: string;
   currentPrice: string;
   realPoolAmount?: string;
   virtualPoolAmount?: string;
