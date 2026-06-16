@@ -19,7 +19,7 @@ export function MarketCard({ market }: MarketCardProps) {
           <span className="text-xs font-medium text-muted-foreground">
             #{market.marketId}
           </span>
-          <MarketStatusBadge status={market.status} />
+          <MarketStatusBadge displayStatus={market.displayStatus} />
         </div>
         <CardTitle className="line-clamp-2 min-h-11 text-base font-semibold">
           <Link

@@ -2,15 +2,16 @@ import type { ComponentProps } from "react";
 
 import { Badge } from "@/shared/ui/badge";
 
-import type { MarketStatus } from "../model/market.types";
+import type { MarketDisplayStatus } from "../model/market.types";
 
 type MarketStatusBadgeProps = {
-  status: MarketStatus;
+  displayStatus: MarketDisplayStatus;
 };
 
-const statusLabel: Record<MarketStatus, string> = {
+const statusLabel: Record<MarketDisplayStatus, string> = {
   PENDING: "검수 대기",
   ACTIVE: "진행 중",
+  CLOSED_BY_TIME: "마감",
   CLOSED: "결과 확정",
   DATA_PENDING: "데이터 대기",
   SETTLEMENT_IN_PROGRESS: "정산 중",
@@ -19,11 +20,12 @@ const statusLabel: Record<MarketStatus, string> = {
 };
 
 const statusVariant: Record<
-  MarketStatus,
+  MarketDisplayStatus,
   ComponentProps<typeof Badge>["variant"]
 > = {
   PENDING: "warning",
   ACTIVE: "success",
+  CLOSED_BY_TIME: "neutral",
   CLOSED: "info",
   DATA_PENDING: "warning",
   SETTLEMENT_IN_PROGRESS: "violet",
@@ -31,6 +33,10 @@ const statusVariant: Record<
   VOIDED: "danger",
 };
 
-export function MarketStatusBadge({ status }: MarketStatusBadgeProps) {
-  return <Badge variant={statusVariant[status]}>{statusLabel[status]}</Badge>;
+export function MarketStatusBadge({ displayStatus }: MarketStatusBadgeProps) {
+  return (
+    <Badge variant={statusVariant[displayStatus]}>
+      {statusLabel[displayStatus]}
+    </Badge>
+  );
 }

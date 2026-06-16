@@ -82,7 +82,7 @@ export default function MarketDetailPage() {
                   <span className="text-sm font-medium text-muted-foreground">
                     #{data.marketId}
                   </span>
-                  <MarketStatusBadge status={data.status} />
+                  <MarketStatusBadge displayStatus={data.displayStatus} />
                 </div>
                 <CardTitle>선택지</CardTitle>
               </CardHeader>
@@ -104,7 +104,8 @@ export default function MarketDetailPage() {
           <CreateMarketPredictionPanel
             marketId={data.marketId}
             options={data.options}
-            marketStatus={data.status}
+            canPredict={data.canPredict}
+            displayStatus={data.displayStatus}
           />
 
           <MyPredictionSection
@@ -171,22 +172,6 @@ function MyPredictionSection({
   }
 
   if (isError) {
-    if (isApiError(error) && error.errorCode === "MARKET_PREDICTION_NOT_FOUND") {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>내 예측 상태</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EmptyState
-              title="아직 이 마켓에 참여하지 않았습니다"
-              description="예측 참여 후 내 예측 상태가 이곳에 표시됩니다."
-            />
-          </CardContent>
-        </Card>
-      );
-    }
-
     const errorMessage = isApiError(error)
       ? error.message
       : error instanceof Error
@@ -217,7 +202,7 @@ function MyPredictionSection({
         <CardContent>
           <EmptyState
             title="아직 이 마켓에 참여하지 않았습니다"
-            description="예측 참여 후 내 예측 상태가 이곳에 표시됩니다."
+            description="예측에 참여하면 이곳에서 내 예측 상태를 확인할 수 있습니다."
           />
         </CardContent>
       </Card>

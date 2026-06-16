@@ -1,0 +1,2705 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Todongsan Market Service API",
+    "description": "Pool Share 기반 즉시 참여형 예측시장 Market API",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8082",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Market Public API",
+      "description": "Gateway를 통해 노출되는 Market 공개 조회 API"
+    },
+    {
+      "name": "Market Insight Internal API",
+      "description": "Insight-Reputation Service가 직접 호출하는 Market 원본 데이터 조회 내부 API"
+    },
+    {
+      "name": "Market PriceHistory API",
+      "description": "Market 가격 그래프용 PriceHistory 조회 API"
+    },
+    {
+      "name": "Market Prediction API",
+      "description": "Gateway를 통해 노출되는 예측 참여 API"
+    },
+    {
+      "name": "Market Admin API",
+      "description": "Market admin APIs. X-Member-Role=ADMIN is required."
+    },
+    {
+      "name": "Market Internal API",
+      "description": "Gateway를 통하지 않는 Market Service 내부 운영 API"
+    }
+  ],
+  "paths": {
+    "/api/v1/markets/{marketId}/predictions": {
+      "post": {
+        "tags": [
+          "Market Prediction API",
+          "Market Public API"
+        ],
+        "summary": "Market 예측 참여",
+        "description": "실제 예측 참여를 생성한다. Quote가 아니라 참여 시점의 최신 가격으로 priceSnapshot과 contractQuantity가 확정된다.",
+        "operationId": "createPrediction",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "X-Member-Id",
+            "in": "header",
+            "description": "Gateway가 주입하는 회원 ID. Market Service는 JWT를 직접 파싱하지 않는다.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 10
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "예측 참여 포인트 차감 멱등성 키. 예: MARKET_PREDICTION_SPEND:market:1:member:10",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "MARKET_PREDICTION_SPEND:market:1:member:10"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePredictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreatePredictionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND / MARKET_PREDICTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreatePredictionResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_NOT_ACTIVE / MARKET_ALREADY_PREDICTED / MARKET_CLOSED / MARKET_PRICE_UPDATE_CONFLICT",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreatePredictionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets/{marketId}/predictions/quote": {
+      "post": {
+        "tags": [
+          "Market Prediction API",
+          "Market Public API"
+        ],
+        "summary": "Market 예측 참여 Quote",
+        "description": "Quote는 확정 견적이 아니라 미리보기이다.\n실제 예측 참여 시점의 가격 기준으로 priceSnapshot과 contractQuantity가 확정된다.\nQuote는 Prediction 생성, Member-Point 호출, pool 변경, PriceHistory 저장을 하지 않는다.\n",
+        "operationId": "quotePrediction",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteMarketPredictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseQuoteMarketPredictionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND / MARKET_PREDICTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseQuoteMarketPredictionResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_NOT_ACTIVE / MARKET_ALREADY_PREDICTED / MARKET_CLOSED / MARKET_PRICE_UPDATE_CONFLICT",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseQuoteMarketPredictionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/markets/predictions/reconcile": {
+      "post": {
+        "tags": [
+          "Market Internal API"
+        ],
+        "summary": "Prediction 포인트 차감 결과 대사",
+        "description": "POINT_PENDING/POINT_UNKNOWN Prediction의 Member-Point 처리 결과를 대사하는 내부 API이다. 기존 경로 /api/v1/internal/...을 유지한다.",
+        "operationId": "reconcilePredictionSpends",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "한 번에 대사할 최대 Prediction 수. 최대 500",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1
+            },
+            "example": 100
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseReconcilePredictionSpendResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets": {
+      "post": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Create admin Market",
+        "description": "Creates a Market in PENDING status. This API does not activate the Market, allow predictions, or create PriceHistory.",
+        "operationId": "createMarket",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMarketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreateMarketResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreateMarketResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreateMarketResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreateMarketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets/{marketId}/settlements": {
+      "post": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Start Market settlement",
+        "description": "Starts settlement for a CLOSED Market. Uses Member-Point batch integration and item idempotencyKey policy.",
+        "operationId": "settleMarket",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          },
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets/{marketId}/settlements/retry": {
+      "post": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Retry Market settlement",
+        "description": "Retries failed or unknown settlement items.",
+        "operationId": "retryMarketSettlement",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          },
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSettleMarketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets/{marketId}/refunds": {
+      "post": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Start Market refund",
+        "description": "Starts refunds for a voided Market. Uses Member-Point batch integration and item idempotencyKey policy.",
+        "operationId": "refundMarket",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          },
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets/{marketId}/refunds/retry": {
+      "post": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Retry Market refund",
+        "description": "Retries failed or unknown refund items.",
+        "operationId": "retryRefundMarket",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          },
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefundMarketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets/{marketId}/void": {
+      "patch": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Void Market",
+        "description": "Changes an allowed Market to VOIDED and prepares refund processing.",
+        "operationId": "voidMarket",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          },
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidMarketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoidMarketResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoidMarketResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoidMarketResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoidMarketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets/{marketId}/result": {
+      "patch": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Confirm Market result",
+        "description": "Confirms the result option and changes the Market to CLOSED. Fails when POINT_PENDING or POINT_UNKNOWN predictions remain.",
+        "operationId": "confirmMarketResult",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          },
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmMarketResultRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseConfirmMarketResultResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseConfirmMarketResultResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseConfirmMarketResultResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseConfirmMarketResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/markets/{marketId}/activate": {
+      "patch": {
+        "tags": [
+          "Market Admin API"
+        ],
+        "summary": "Activate admin Market",
+        "description": "Changes a PENDING Market to ACTIVE.",
+        "operationId": "activateMarket",
+        "parameters": [
+          {
+            "name": "X-Member-Role",
+            "in": "header",
+            "description": "Member role injected by Gateway. Admin APIs require ADMIN. Market Service does not parse JWT.",
+            "required": true,
+            "example": "ADMIN"
+          },
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED / MARKET_INVALID_OPTION / MARKET_INVALID_OPTION_RANGE",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseActivateMarketResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseActivateMarketResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseActivateMarketResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_CLOSED / MARKET_NO_PREDICTIONS / MARKET_ALREADY_SETTLED / MARKET_REFUND_NOT_ALLOWED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseActivateMarketResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/api/v1/markets/{marketId}/insight-summary": {
+      "get": {
+        "tags": [
+          "Market Insight Internal API"
+        ],
+        "summary": "Insight용 Market 요약/선택지 집계 조회",
+        "description": "Gateway를 통하지 않는 서비스 간 내부 API이다.\nMarket Service는 AI 분석 결과를 생성하지 않고 SETTLED Market의 원본 참여 데이터만 읽기 용도로 제공한다.\n회원 프로필 정보는 제공하지 않으며, Insight-Reputation Service가 별도로 조회한다.\n",
+        "operationId": "getInsightSummary",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID. SETTLED 상태만 조회 가능",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketInsightSummaryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketInsightSummaryResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_NO_PREDICTIONS",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketInsightSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/api/v1/markets/{marketId}/insight-predictions": {
+      "get": {
+        "tags": [
+          "Market Insight Internal API"
+        ],
+        "summary": "Insight용 Prediction 페이지 조회",
+        "description": "Gateway를 통하지 않는 서비스 간 내부 API이다.\nSETTLED Market의 SETTLED Prediction만 createdAt ASC, id ASC 순서로 조회한다.\npage 기본값은 0, size 기본값은 500, size 최대값은 1000이며 잘못된 page/size는 VALIDATION_FAILED를 반환한다.\n",
+        "operationId": "getInsightPredictions",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID. SETTLED 상태만 조회 가능",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호. 0부터 시작",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0,
+              "minimum": 0
+            },
+            "example": 0
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지 크기. 기본 500, 최대 1000",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 500,
+              "maximum": 1000,
+              "minimum": 1
+            },
+            "example": 500
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketInsightPredictionPageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketInsightPredictionPageResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_INVALID_STATUS / MARKET_NO_PREDICTIONS",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketInsightPredictionPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets": {
+      "get": {
+        "tags": [
+          "Market Public API"
+        ],
+        "summary": "Market 목록 조회",
+        "description": "Market 목록을 상태, 키워드, 페이지 조건으로 조회한다. Decimal 응답은 JSON String으로 제공한다.",
+        "operationId": "getMarkets",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호. 0부터 시작",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0,
+              "minimum": 0
+            },
+            "example": 0
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지 크기. 최대 100",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Market 상태 필터",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "ACTIVE",
+                "CLOSED",
+                "DATA_PENDING",
+                "SETTLEMENT_IN_PROGRESS",
+                "SETTLED",
+                "VOIDED"
+              ]
+            },
+            "example": "ACTIVE"
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "제목 검색 키워드",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "아파트"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND / MARKET_PREDICTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketListResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_NOT_ACTIVE / MARKET_ALREADY_PREDICTED / MARKET_CLOSED / MARKET_PRICE_UPDATE_CONFLICT",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets/{marketId}": {
+      "get": {
+        "tags": [
+          "Market Public API"
+        ],
+        "summary": "Market 상세 조회",
+        "description": "Market 기본 정보와 선택지의 현재 가격을 조회한다.",
+        "operationId": "getMarket",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND / MARKET_PREDICTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketDetailResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_NOT_ACTIVE / MARKET_ALREADY_PREDICTED / MARKET_CLOSED / MARKET_PRICE_UPDATE_CONFLICT",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets/{marketId}/price-history": {
+      "get": {
+        "tags": [
+          "Market PriceHistory API",
+          "Market Public API"
+        ],
+        "summary": "Market PriceHistory 조회",
+        "description": "그래프 표시용 가격 이력을 조회한다. PriceHistory는 정산 계산 원천이 아니며, Decimal 응답은 JSON String으로 제공한다.",
+        "operationId": "getPriceHistory",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호. 0부터 시작",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0,
+              "minimum": 0
+            },
+            "example": 0
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지 크기. 최대 100",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 50
+          },
+          {
+            "name": "optionId",
+            "in": "query",
+            "description": "선택지 ID 필터",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 11
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketPriceHistoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND / MARKET_PREDICTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketPriceHistoryResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_NOT_ACTIVE / MARKET_ALREADY_PREDICTED / MARKET_CLOSED / MARKET_PRICE_UPDATE_CONFLICT",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketPriceHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/markets/{marketId}/predictions/me": {
+      "get": {
+        "tags": [
+          "Market Prediction API",
+          "Market Public API"
+        ],
+        "summary": "내 예측 참여 조회",
+        "description": "Gateway가 주입한 X-Member-Id 기준으로 내 예측 참여를 조회한다.",
+        "operationId": "getMyPrediction",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "path",
+            "description": "Market ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "X-Member-Id",
+            "in": "header",
+            "description": "Gateway가 주입하는 회원 ID. Market Service는 JWT를 직접 파싱하지 않는다.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 10
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketPredictionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MARKET_NOT_FOUND / MARKET_OPTION_NOT_FOUND / MARKET_PREDICTION_NOT_FOUND",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketPredictionResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "MARKET_NOT_ACTIVE / MARKET_ALREADY_PREDICTED / MARKET_CLOSED / MARKET_PRICE_UPDATE_CONFLICT",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMarketPredictionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreatePredictionRequest": {
+        "type": "object",
+        "properties": {
+          "marketOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pointAmount": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseCreatePredictionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreatePredictionResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreatePredictionResponse": {
+        "type": "object",
+        "properties": {
+          "predictionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "selectedOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pointAmount": {
+            "type": "string",
+            "description": "참여 포인트 금액. Decimal String으로 응답",
+            "example": "100.00"
+          },
+          "priceSnapshot": {
+            "type": "string",
+            "description": "예측 참여 시점에 확정된 가격 스냅샷. Decimal String으로 응답",
+            "example": "0.50000000"
+          },
+          "contractQuantity": {
+            "type": "string",
+            "description": "확정 계약 수량. Decimal String으로 응답",
+            "example": "200.00000000"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POINT_PENDING",
+              "CONFIRMED",
+              "FAILED",
+              "POINT_UNKNOWN",
+              "SETTLED",
+              "REFUND_PENDING",
+              "REFUND_UNKNOWN",
+              "REFUNDED"
+            ]
+          }
+        }
+      },
+      "QuoteMarketPredictionRequest": {
+        "type": "object",
+        "properties": {
+          "marketOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pointAmount": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "marketOptionId"
+        ]
+      },
+      "ApiResponseQuoteMarketPredictionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/QuoteMarketPredictionResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "QuoteMarketPredictionResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "selectedOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pointAmount": {
+            "type": "string",
+            "description": "Quote 기준 참여 포인트 금액. Decimal String으로 응답",
+            "example": "100.00"
+          },
+          "currentPrice": {
+            "type": "string",
+            "description": "현재 가격. Decimal String으로 응답",
+            "example": "0.50000000"
+          },
+          "estimatedContractQuantity": {
+            "type": "string",
+            "description": "예상 계약 수량. Quote 미리보기 값이며 확정값이 아님",
+            "example": "200.00000000"
+          },
+          "estimatedAfterPrice": {
+            "type": "string",
+            "description": "참여 후 예상 가격. Quote 미리보기 값이며 확정값이 아님",
+            "example": "0.68750000"
+          },
+          "priceImpactRate": {
+            "type": "string",
+            "description": "예상 가격 영향률. Decimal String으로 응답",
+            "example": "0.18750000"
+          },
+          "selectedOptionEffectivePoolBefore": {
+            "type": "string",
+            "description": "선택지 참여 전 유효 풀. 실제 풀과 가상 유동성을 합산한 Quote 계산용 값",
+            "example": "100.00"
+          },
+          "selectedOptionEffectivePoolAfter": {
+            "type": "string",
+            "description": "선택지 참여 후 유효 풀. Quote 미리보기 값",
+            "example": "200.00"
+          },
+          "totalEffectivePoolBefore": {
+            "type": "string",
+            "description": "참여 전 전체 유효 풀. Quote 계산용 값",
+            "example": "200.00"
+          },
+          "totalEffectivePoolAfter": {
+            "type": "string",
+            "description": "참여 후 전체 유효 풀. Quote 미리보기 값",
+            "example": "300.00"
+          },
+          "notice": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseReconcilePredictionSpendResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReconcilePredictionSpendResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReconcilePredictionSpendResponse": {
+        "type": "object",
+        "properties": {
+          "requestedLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scannedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "processedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "confirmedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unknownCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skippedCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CreateMarketOptionRequest": {
+        "type": "object",
+        "properties": {
+          "optionCode": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 0
+          },
+          "optionText": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rangeMin": {
+            "type": "number"
+          },
+          "rangeMax": {
+            "type": "number"
+          },
+          "minInclusive": {
+            "type": "boolean"
+          },
+          "maxInclusive": {
+            "type": "boolean"
+          },
+          "virtualPoolAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "optionCode",
+          "optionText"
+        ]
+      },
+      "CreateMarketRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 0
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "PRICE_INDEX",
+              "TRANSACTION_VOLUME",
+              "ACTUAL_PRICE",
+              "POLICY_EVENT"
+            ]
+          },
+          "answerType": {
+            "type": "string",
+            "enum": [
+              "YES_NO",
+              "MULTIPLE_CHOICE",
+              "NUMERIC_RANGE"
+            ]
+          },
+          "metricUnit": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "COUNT",
+              "KRW",
+              "INDEX_POINT"
+            ]
+          },
+          "judgeDataSource": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 0
+          },
+          "judgeCriteria": {
+            "type": "string",
+            "minLength": 1
+          },
+          "judgeDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "closeAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "settleDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "feeRate": {
+            "type": "number"
+          },
+          "createdBy": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateMarketOptionRequest"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "answerType",
+          "category",
+          "closeAt",
+          "createdBy",
+          "judgeCriteria",
+          "judgeDataSource",
+          "judgeDate",
+          "options",
+          "title"
+        ]
+      },
+      "ApiResponseCreateMarketResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CreateMarketResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateMarketResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApiResponseSettleMarketResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SettleMarketResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SettleMarketResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "settlementId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resultOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPool": {
+            "type": "number"
+          },
+          "feeAmount": {
+            "type": "number"
+          },
+          "settlementPool": {
+            "type": "number"
+          },
+          "winningContractQuantity": {
+            "type": "number"
+          },
+          "payoutPerContract": {
+            "type": "number"
+          },
+          "burnedPointAmount": {
+            "type": "number"
+          },
+          "winnerCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "loserCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "successCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "marketStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          },
+          "settlementStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED"
+            ]
+          }
+        }
+      },
+      "ApiResponseRefundMarketResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RefundMarketResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RefundMarketResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "voidId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refundTargetCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "successCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unknownCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "marketStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          },
+          "refundStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED"
+            ]
+          }
+        }
+      },
+      "VoidMarketRequest": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "reason",
+          "reasonCode"
+        ]
+      },
+      "ApiResponseVoidMarketResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/VoidMarketResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "VoidMarketResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "voidId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          },
+          "refundRequired": {
+            "type": "boolean"
+          },
+          "refundablePredictionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reasonCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ConfirmMarketResultRequest": {
+        "type": "object",
+        "properties": {
+          "resultOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resultValue": {
+            "type": "number"
+          },
+          "resultText": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 0
+          }
+        }
+      },
+      "ApiResponseConfirmMarketResultResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ConfirmMarketResultResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ConfirmMarketResultResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resultOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resultValue": {
+            "type": "number"
+          },
+          "resultText": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          }
+        }
+      },
+      "ActivateMarketResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          }
+        }
+      },
+      "ApiResponseActivateMarketResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ActivateMarketResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseMarketInsightSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketInsightSummaryResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MarketInsightMarketSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "PRICE_INDEX",
+              "TRANSACTION_VOLUME",
+              "ACTUAL_PRICE",
+              "POLICY_EVENT"
+            ]
+          },
+          "answerType": {
+            "type": "string",
+            "enum": [
+              "YES_NO",
+              "MULTIPLE_CHOICE",
+              "NUMERIC_RANGE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          },
+          "closeAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "judgeDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "judgeDataSource": {
+            "type": "string"
+          },
+          "judgeCriteria": {
+            "type": "string"
+          },
+          "resultOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resultValue": {
+            "type": "string",
+            "description": "확정 결과 값. Decimal String으로 응답",
+            "example": "0.7500"
+          },
+          "resultText": {
+            "type": "string"
+          },
+          "totalPredictionCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPoolAmount": {
+            "type": "string",
+            "description": "Insight 문맥의 실제 참여 포인트 총합. virtualPoolAmount를 포함하지 않음",
+            "example": "600.00"
+          },
+          "settlementPoolAmount": {
+            "type": "string",
+            "description": "정산 대상 풀 금액. market_settlement.settlement_pool 기준",
+            "example": "570.00"
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MarketInsightOptionStatisticsResponse": {
+        "type": "object",
+        "properties": {
+          "optionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "optionCode": {
+            "type": "string"
+          },
+          "optionLabel": {
+            "type": "string"
+          },
+          "rangeMin": {
+            "type": "string",
+            "description": "선택지 범위 최소값. Decimal String으로 응답",
+            "example": "0.0000"
+          },
+          "rangeMax": {
+            "type": "string",
+            "description": "선택지 범위 최대값. Decimal String으로 응답",
+            "example": "0.5000"
+          },
+          "minInclusive": {
+            "type": "boolean"
+          },
+          "maxInclusive": {
+            "type": "boolean"
+          },
+          "predictionCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "participantCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "poolAmount": {
+            "type": "string",
+            "description": "해당 선택지의 실제 참여 포인트 합계. virtualPoolAmount를 포함하지 않음",
+            "example": "300.00"
+          },
+          "finalPrice": {
+            "type": "string",
+            "description": "최종 현재 가격. Decimal String으로 응답",
+            "example": "0.42100000"
+          },
+          "totalContractQuantity": {
+            "type": "string",
+            "description": "총 계약 수량. Decimal String으로 응답",
+            "example": "712.50000000"
+          },
+          "isResult": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MarketInsightSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "market": {
+            "$ref": "#/components/schemas/MarketInsightMarketSummaryResponse"
+          },
+          "optionStatistics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketInsightOptionStatisticsResponse"
+            }
+          }
+        }
+      },
+      "ApiResponseMarketInsightPredictionPageResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketInsightPredictionPageResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MarketInsightPredictionPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketInsightPredictionResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MarketInsightPredictionResponse": {
+        "type": "object",
+        "properties": {
+          "predictionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "회원 ID. 회원 프로필 정보는 제공하지 않음",
+            "example": 10
+          },
+          "optionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "optionCode": {
+            "type": "string"
+          },
+          "optionLabel": {
+            "type": "string"
+          },
+          "pointAmount": {
+            "type": "string",
+            "description": "참여 포인트 금액. Decimal String으로 응답",
+            "example": "100.00"
+          },
+          "priceSnapshot": {
+            "type": "string",
+            "description": "예측 참여 시점의 확정 가격 스냅샷. Decimal String으로 응답",
+            "example": "0.42100000"
+          },
+          "contractQuantity": {
+            "type": "string",
+            "description": "확정 계약 수량. Decimal String으로 응답",
+            "example": "237.52969121"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POINT_PENDING",
+              "CONFIRMED",
+              "FAILED",
+              "POINT_UNKNOWN",
+              "SETTLED",
+              "REFUND_PENDING",
+              "REFUND_UNKNOWN",
+              "REFUNDED"
+            ]
+          },
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "participatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseMarketListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketListResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MarketListResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketSummary"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MarketOptionResponse": {
+        "type": "object",
+        "properties": {
+          "optionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "content": {
+            "type": "string"
+          },
+          "currentPrice": {
+            "type": "string",
+            "description": "현재 가격. Decimal String으로 응답",
+            "example": "0.50000000"
+          },
+          "realPoolAmount": {
+            "type": "string",
+            "description": "실제 참여 풀. Decimal String으로 응답",
+            "example": "0.00"
+          },
+          "virtualPoolAmount": {
+            "type": "string",
+            "description": "생성 시 설정되는 가상 유동성. 생성 후 수정 불가",
+            "example": "100.00"
+          }
+        }
+      },
+      "MarketSummary": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          },
+          "closeAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalPoolAmount": {
+            "type": "string",
+            "description": "실제 참여 포인트 총합. Decimal String으로 응답",
+            "example": "1000.00"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketOptionResponse"
+            }
+          }
+        }
+      },
+      "ApiResponseMarketDetailResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketDetailResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MarketDetailResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ]
+          },
+          "closeAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resultAnnounceAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalPoolAmount": {
+            "type": "string",
+            "description": "실제 참여 포인트 총합. Decimal String으로 응답",
+            "example": "1000.00"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketOptionResponse"
+            }
+          }
+        }
+      },
+      "ApiResponseMarketPriceHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketPriceHistoryResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MarketPriceHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceHistory"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PriceHistory": {
+        "type": "object",
+        "properties": {
+          "historyId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "optionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "optionContent": {
+            "type": "string"
+          },
+          "predictionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "eventType": {
+            "type": "string",
+            "enum": [
+              "MARKET_OPENED",
+              "PREDICTION_CONFIRMED",
+              "MARKET_SETTLED",
+              "MARKET_VOIDED"
+            ]
+          },
+          "priceBefore": {
+            "type": "string",
+            "description": "변경 전 가격. Decimal String으로 응답",
+            "example": "0.50000000"
+          },
+          "priceAfter": {
+            "type": "string",
+            "description": "변경 후 가격. Decimal String으로 응답",
+            "example": "0.68750000"
+          },
+          "priceChangeRate": {
+            "type": "string",
+            "description": "가격 변화율. Decimal String으로 응답",
+            "example": "0.37500000"
+          },
+          "realPoolBefore": {
+            "type": "string",
+            "description": "변경 전 실제 참여 풀. Decimal String으로 응답",
+            "example": "0.00"
+          },
+          "realPoolAfter": {
+            "type": "string",
+            "description": "변경 후 실제 참여 풀. Decimal String으로 응답",
+            "example": "100.00"
+          },
+          "virtualPoolAmount": {
+            "type": "string",
+            "description": "선택지 가상 유동성. 생성 후 수정되지 않는 값",
+            "example": "100.00"
+          },
+          "contractQuantityBefore": {
+            "type": "string",
+            "description": "변경 전 계약 수량. Decimal String으로 응답",
+            "example": "0.00000000"
+          },
+          "contractQuantityAfter": {
+            "type": "string",
+            "description": "변경 후 계약 수량. Decimal String으로 응답",
+            "example": "200.00000000"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseMarketPredictionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketPredictionResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MarketPredictionResponse": {
+        "type": "object",
+        "properties": {
+          "predictionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "marketId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "selectedOptionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pointAmount": {
+            "type": "string",
+            "description": "참여 포인트 금액. Decimal String으로 응답",
+            "example": "100.00"
+          },
+          "priceSnapshot": {
+            "type": "string",
+            "description": "예측 참여 시점에 확정된 가격 스냅샷. Decimal String으로 응답",
+            "example": "0.50000000"
+          },
+          "contractQuantity": {
+            "type": "string",
+            "description": "확정 계약 수량. Decimal String으로 응답",
+            "example": "200.00000000"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "POINT_PENDING",
+              "CONFIRMED",
+              "FAILED",
+              "POINT_UNKNOWN",
+              "SETTLED",
+              "REFUND_PENDING",
+              "REFUND_UNKNOWN",
+              "REFUNDED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

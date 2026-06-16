@@ -5,9 +5,9 @@ import { type ChangeEvent, type FormEvent, useState } from "react";
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { marketKeys } from "@/entities/market/model/market.keys";
 import type {
+  MarketDisplayStatus,
   MarketOption,
   MarketPredictionQuoteResponse,
-  MarketStatus,
 } from "@/entities/market/model/market.types";
 import { useMarketPredictionQuoteMutation } from "@/entities/market/model/useMarketPredictionQuoteMutation";
 import { predictionKeys } from "@/entities/prediction/model/prediction.keys";
@@ -27,7 +27,8 @@ import { Input } from "@/shared/ui/input";
 type Props = {
   marketId: number;
   options: MarketOption[];
-  marketStatus: MarketStatus;
+  canPredict: boolean;
+  displayStatus: MarketDisplayStatus;
 };
 
 const POINT_AMOUNT_PATTERN = /^(?!0+(?:\.0{1,2})?$)\d+(?:\.\d{1,2})?$/;
@@ -37,7 +38,8 @@ const DEFAULT_NOTICE =
 export function CreateMarketPredictionPanel({
   marketId,
   options,
-  marketStatus,
+  canPredict,
+  displayStatus,
 }: Props) {
   const queryClient = useQueryClient();
 
@@ -49,7 +51,7 @@ export function CreateMarketPredictionPanel({
       : null);
 
   const hasMemberId = resolvedMemberId !== null;
-  const isMarketActive = marketStatus === "ACTIVE";
+  const isMarketActive = canPredict;
   const hasOptions = options.length > 0;
 
   const myPredictionQuery = useMyMarketPredictionQuery(marketId, {
@@ -76,7 +78,9 @@ export function CreateMarketPredictionPanel({
 
   const isQuoteFormDisabled = !isMarketActive || !hasOptions;
   const disabledMessage = !isMarketActive
-    ? "ACTIVE 상태의 마켓에서만 예측에 참여할 수 있습니다."
+    ? displayStatus === "CLOSED_BY_TIME"
+      ? "마감 시간이 지나 예측에 참여할 수 없습니다."
+      : "현재 예측 참여가 불가능한 상태입니다."
     : !hasOptions
       ? "선택지가 없어 예측에 참여할 수 없습니다."
       : null;
@@ -113,13 +117,24 @@ export function CreateMarketPredictionPanel({
     }
 
     setValidationMessage(null);
-    quoteMutation.mutate({
-      marketId,
-      request: {
-        marketOptionId: selectedOptionId,
-        pointAmount: trimmedAmount,
+    quoteMutation.mutate(
+      {
+        marketId,
+        request: {
+          marketOptionId: selectedOptionId,
+          pointAmount: trimmedAmount,
+        },
       },
-    });
+      {
+        onError: (error) => {
+          if (isApiError(error) && error.errorCode === "MARKET_CLOSED") {
+            queryClient.invalidateQueries({
+              queryKey: marketKeys.detail(marketId),
+            });
+          }
+        },
+      },
+    );
   };
 
   const handlePredict = () => {
@@ -140,13 +155,24 @@ export function CreateMarketPredictionPanel({
             queryKey: predictionKeys.myMarketPrediction(variables.marketId),
           });
           queryClient.invalidateQueries({
-            queryKey: marketKeys.all,
+            queryKey: marketKeys.detail(variables.marketId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: marketKeys.priceHistoryRoot(variables.marketId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: marketKeys.lists(),
           });
         },
         onError: (error, variables) => {
           if (shouldInvalidateMyPredictionOnCreateError(error)) {
             queryClient.invalidateQueries({
               queryKey: predictionKeys.myMarketPrediction(variables.marketId),
+            });
+          }
+          if (isApiError(error) && error.errorCode === "MARKET_CLOSED") {
+            queryClient.invalidateQueries({
+              queryKey: marketKeys.detail(variables.marketId),
             });
           }
         },
@@ -163,11 +189,15 @@ export function CreateMarketPredictionPanel({
     createMutation.isPending ||
     hasPrediction;
 
-  const quoteErrorMessage = isApiError(quoteMutation.error)
-    ? quoteMutation.error.message
-    : quoteMutation.error instanceof Error
-      ? quoteMutation.error.message
-      : "Quote를 조회하는 중 문제가 발생했습니다.";
+  const quoteErrorMessage =
+    isApiError(quoteMutation.error) &&
+    quoteMutation.error.errorCode === "MARKET_CLOSED"
+      ? "마감 시간이 지나 예측에 참여할 수 없습니다."
+      : isApiError(quoteMutation.error)
+        ? quoteMutation.error.message
+        : quoteMutation.error instanceof Error
+          ? quoteMutation.error.message
+          : "Quote를 조회하는 중 문제가 발생했습니다.";
 
   return (
     <Card>
@@ -397,7 +427,7 @@ function PredictionSuccessMessage({ data }: PredictionSuccessMessageProps) {
 const PREDICTION_ERROR_MESSAGES: Record<string, string> = {
   MARKET_NOT_FOUND: "마켓을 찾을 수 없습니다.",
   MARKET_NOT_ACTIVE: "현재 참여할 수 없는 마켓입니다.",
-  MARKET_CLOSED: "이미 마감된 마켓입니다.",
+  MARKET_CLOSED: "마감 시간이 지나 예측에 참여할 수 없습니다.",
   MARKET_ALREADY_PREDICTED: "이미 이 마켓에 참여했습니다.",
   MARKET_OPTION_NOT_FOUND: "선택지를 찾을 수 없습니다.",
   MARKET_INVALID_BET_AMOUNT: "예측 참여 금액을 확인해 주세요.",
