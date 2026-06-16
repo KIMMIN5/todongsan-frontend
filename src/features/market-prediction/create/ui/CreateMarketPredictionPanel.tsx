@@ -59,6 +59,9 @@ export function CreateMarketPredictionPanel({
     myPredictionQuery.data !== undefined &&
     myPredictionQuery.data !== null &&
     myPredictionQuery.data.status !== undefined;
+  const isMyPredictionChecking =
+    hasMemberId &&
+    (myPredictionQuery.isLoading || myPredictionQuery.isFetching);
 
   const [selectedOptionId, setSelectedOptionId] = useState<number | undefined>(
     options[0]?.optionId,
@@ -140,6 +143,13 @@ export function CreateMarketPredictionPanel({
             queryKey: marketKeys.all,
           });
         },
+        onError: (error, variables) => {
+          if (isUncertainPredictionError(error)) {
+            queryClient.invalidateQueries({
+              queryKey: predictionKeys.myMarketPrediction(variables.marketId),
+            });
+          }
+        },
       },
     );
   };
@@ -147,6 +157,7 @@ export function CreateMarketPredictionPanel({
   const isPredictButtonDisabled =
     !isMarketActive ||
     !hasMemberId ||
+    isMyPredictionChecking ||
     selectedOptionId === undefined ||
     !quoteMutation.data ||
     createMutation.isPending ||
@@ -260,6 +271,12 @@ export function CreateMarketPredictionPanel({
               내 예측 상태 카드에서 결과를 확인하세요.
             </p>
           </div>
+        )}
+
+        {isMyPredictionChecking && (
+          <p className="text-xs text-muted-foreground">
+            기존 참여 여부를 확인 중입니다.
+          </p>
         )}
 
         {!hasPrediction && quoteMutation.data && (
@@ -478,4 +495,18 @@ function QuoteRow({ label, value }: QuoteRowProps) {
 function formatPercentPoint(value: string | null | undefined): string {
   const formatted = formatMarketPrice(value);
   return formatted === "-" ? "-" : `${formatted}%`;
+}
+
+function isUncertainPredictionError(error: unknown): boolean {
+  if (isApiError(error)) {
+    return (
+      error.status === 502 ||
+      error.status === 503 ||
+      error.status === 504 ||
+      error.errorCode === "EXTERNAL_SERVICE_TIMEOUT" ||
+      error.errorCode === "EXTERNAL_SERVICE_UNAVAILABLE" ||
+      error.errorCode === "EXTERNAL_SERVICE_ERROR"
+    );
+  }
+  return false;
 }
