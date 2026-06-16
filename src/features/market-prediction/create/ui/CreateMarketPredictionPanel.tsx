@@ -144,7 +144,7 @@ export function CreateMarketPredictionPanel({
           });
         },
         onError: (error, variables) => {
-          if (isUncertainPredictionError(error)) {
+          if (shouldInvalidateMyPredictionOnCreateError(error)) {
             queryClient.invalidateQueries({
               queryKey: predictionKeys.myMarketPrediction(variables.marketId),
             });
@@ -497,7 +497,7 @@ function formatPercentPoint(value: string | null | undefined): string {
   return formatted === "-" ? "-" : `${formatted}%`;
 }
 
-function isUncertainPredictionError(error: unknown): boolean {
+function shouldInvalidateMyPredictionOnCreateError(error: unknown): boolean {
   if (isApiError(error)) {
     return (
       error.status === 502 ||
@@ -505,7 +505,8 @@ function isUncertainPredictionError(error: unknown): boolean {
       error.status === 504 ||
       error.errorCode === "EXTERNAL_SERVICE_TIMEOUT" ||
       error.errorCode === "EXTERNAL_SERVICE_UNAVAILABLE" ||
-      error.errorCode === "EXTERNAL_SERVICE_ERROR"
+      error.errorCode === "EXTERNAL_SERVICE_ERROR" ||
+      error.errorCode === "MARKET_ALREADY_PREDICTED"
     );
   }
   return false;
