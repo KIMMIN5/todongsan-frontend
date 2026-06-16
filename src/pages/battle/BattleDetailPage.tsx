@@ -1,12 +1,17 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { ArrowLeft, CalendarDays, MapPin, Users } from "lucide-react";
 
+import { useAuth } from "@/entities/auth/model/useAuth";
 import { useBattleDetailQuery } from "@/entities/battle/model/useBattleDetailQuery";
 import { useBattleResultQuery } from "@/entities/battle/model/useBattleResultQuery";
 import { BattleCommentSection } from "@/entities/battle/ui/BattleCommentSection";
 import { BattleStatusBadge } from "@/entities/battle/ui/BattleStatusBadge";
 import { BattleVotePanel } from "@/entities/battle/ui/BattleVotePanel";
+import { pointKeys } from "@/entities/point/model/point.keys";
 import { isApiError } from "@/shared/api/apiError";
+import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { formatDateTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
@@ -23,6 +28,20 @@ export default function BattleDetailPage() {
 
   const detailQuery = useBattleDetailQuery(parsedId);
   const resultQuery = useBattleResultQuery(parsedId);
+
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, memberId, nickname } = useAuth();
+
+  const handleRequireLogin = () => {
+    toast.error("로그인이 필요합니다.");
+    navigate(ROUTE_PATH.LOGIN);
+  };
+
+  // 투표/댓글 보상으로 포인트 잔액이 바뀌므로 성공 시 page 레벨에서 무효화
+  const invalidatePointBalance = () => {
+    queryClient.invalidateQueries({ queryKey: pointKeys.balance() });
+  };
 
   if (!isValidId) {
     return (
@@ -169,6 +188,9 @@ export default function BattleDetailPage() {
                 status={battle.status}
                 startAt={battle.startAt}
                 result={resultQuery.data}
+                isAuthenticated={isAuthenticated}
+                onRequireLogin={handleRequireLogin}
+                onVoteSuccess={invalidatePointBalance}
               />
             )}
           </CardContent>
@@ -206,6 +228,10 @@ export default function BattleDetailPage() {
           <BattleCommentSection
             battleId={battle.battleId}
             status={battle.status}
+            isAuthenticated={isAuthenticated}
+            currentMemberId={memberId}
+            currentNickname={nickname}
+            onCommentSuccess={invalidatePointBalance}
           />
         </CardContent>
       </Card>

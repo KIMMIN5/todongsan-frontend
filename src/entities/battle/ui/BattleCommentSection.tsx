@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import { useAuth } from "@/entities/auth/model/useAuth";
 import { isApiError } from "@/shared/api/apiError";
 import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -17,13 +16,21 @@ const COMMENT_PAGE_SIZE = 10;
 type BattleCommentSectionProps = {
   battleId: number;
   status: BattleStatus;
+  isAuthenticated: boolean;
+  currentMemberId: number | null;
+  currentNickname: string | null;
+  /** 댓글 작성 성공 후 page 레벨 후처리 (예: 포인트 잔액 무효화) */
+  onCommentSuccess?: () => void;
 };
 
 export function BattleCommentSection({
   battleId,
   status,
+  isAuthenticated,
+  currentMemberId,
+  currentNickname,
+  onCommentSuccess,
 }: BattleCommentSectionProps) {
-  const { memberId, nickname } = useAuth();
   const [page, setPage] = useState(0);
 
   const { data, error, isError, isLoading, isFetching, refetch } =
@@ -41,7 +48,12 @@ export function BattleCommentSection({
         </span>
       </div>
 
-      <BattleCommentForm battleId={battleId} disabled={!isCommentable} />
+      <BattleCommentForm
+        battleId={battleId}
+        isAuthenticated={isAuthenticated}
+        disabled={!isCommentable}
+        onCommentSuccess={onCommentSuccess}
+      />
 
       {isLoading && (
         <div className="space-y-4">
@@ -78,8 +90,8 @@ export function BattleCommentSection({
           <BattleCommentList
             battleId={battleId}
             comments={data.content}
-            currentMemberId={memberId}
-            currentNickname={nickname}
+            currentMemberId={currentMemberId}
+            currentNickname={currentNickname}
           />
 
           {data.totalPages > 1 && (

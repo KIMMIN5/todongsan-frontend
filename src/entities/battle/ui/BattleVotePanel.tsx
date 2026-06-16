@@ -1,12 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, Lock } from "lucide-react";
 
-import { useAuth } from "@/entities/auth/model/useAuth";
 import { isApiError } from "@/shared/api/apiError";
-import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { formatDateTime } from "@/shared/lib/formatDate";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
@@ -36,6 +33,11 @@ type BattleVotePanelProps = {
   status: BattleStatus;
   startAt: string;
   result: BattleResult;
+  isAuthenticated: boolean;
+  /** 비로그인 사용자가 투표를 시도할 때 호출 (로그인 토스트/이동은 page에서 처리) */
+  onRequireLogin: () => void;
+  /** 투표 성공 후 page 레벨 후처리 (예: 포인트 잔액 무효화) */
+  onVoteSuccess?: () => void;
 };
 
 type OptionButtonProps = {
@@ -81,10 +83,11 @@ export function BattleVotePanel({
   status,
   startAt,
   result,
+  isAuthenticated,
+  onRequireLogin,
+  onVoteSuccess,
 }: BattleVotePanelProps) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
   const voteMutation = useCreateVote(battleId);
 
   const [selected, setSelected] = useState<BattleOption | null>(null);
@@ -150,8 +153,7 @@ export function BattleVotePanel({
   const handleVoteClick = () => {
     if (!selected) return;
     if (!isAuthenticated) {
-      toast.error("로그인이 필요합니다.");
-      navigate(ROUTE_PATH.LOGIN);
+      onRequireLogin();
       return;
     }
     setConfirmOpen(true);
@@ -166,6 +168,7 @@ export function BattleVotePanel({
           setConfirmOpen(false);
           setSelected(null);
           toast.success(data.message ?? "투표가 완료되었습니다.");
+          onVoteSuccess?.();
         },
         onError: (error) => {
           setConfirmOpen(false);

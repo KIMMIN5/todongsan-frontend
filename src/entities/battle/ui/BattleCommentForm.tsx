@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-import { useAuth } from "@/entities/auth/model/useAuth";
 import { isApiError } from "@/shared/api/apiError";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { Button } from "@/shared/ui/button";
@@ -18,12 +17,19 @@ import { useCreateComment } from "../model/useCreateComment";
 
 type BattleCommentFormProps = {
   battleId: number;
+  isAuthenticated: boolean;
   /** 종료/취소된 배틀이면 댓글 작성 불가 */
   disabled?: boolean;
+  /** 댓글 작성 성공 후 page 레벨 후처리 (예: 포인트 잔액 무효화) */
+  onCommentSuccess?: () => void;
 };
 
-export function BattleCommentForm({ battleId, disabled }: BattleCommentFormProps) {
-  const { isAuthenticated } = useAuth();
+export function BattleCommentForm({
+  battleId,
+  isAuthenticated,
+  disabled,
+  onCommentSuccess,
+}: BattleCommentFormProps) {
   const createComment = useCreateComment(battleId);
 
   const {
@@ -67,6 +73,7 @@ export function BattleCommentForm({ battleId, disabled }: BattleCommentFormProps
         onSuccess: () => {
           reset({ content: "" });
           toast.success("댓글이 작성되었습니다.");
+          onCommentSuccess?.();
         },
         onError: (error) => {
           toast.error(
