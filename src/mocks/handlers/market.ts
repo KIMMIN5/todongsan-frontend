@@ -194,21 +194,73 @@ export const marketHandlers = [
   }),
 
   // 예측 참여
-  http.post('/api/v1/markets/:marketId/predictions', () => {
+  http.post('/api/v1/markets/:marketId/predictions', async ({ request, params }) => {
+    const marketId = Number(params.marketId);
+    const body = await request.json() as {
+      marketOptionId?: number;
+      pointAmount?: string;
+    };
+
+    // MARKET_ALREADY_PREDICTED 에러 mock: ?mockError=already_predicted 쿼리로 테스트
+    const url = new URL(request.url);
+    if (url.searchParams.get('mockError') === 'already_predicted') {
+      return HttpResponse.json(
+        {
+          success: false,
+          errorCode: 'MARKET_ALREADY_PREDICTED',
+          message: '이미 이 마켓에 참여했습니다.',
+          data: null,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 409 },
+      );
+    }
+
+    // POINT_INSUFFICIENT mock: ?mockError=insufficient 쿼리로 테스트
+    if (url.searchParams.get('mockError') === 'insufficient') {
+      return HttpResponse.json(
+        {
+          success: false,
+          errorCode: 'POINT_INSUFFICIENT',
+          message: '포인트가 부족합니다.',
+          data: null,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 422 },
+      );
+    }
+
+    // POINT_UNKNOWN mock: ?mockStatus=unknown 쿼리로 테스트
+    if (url.searchParams.get('mockStatus') === 'unknown') {
+      return HttpResponse.json({
+        success: true,
+        errorCode: null,
+        message: '예측 참여 처리 상태를 확인 중입니다.',
+        data: {
+          predictionId: 1,
+          marketId,
+          selectedOptionId: body.marketOptionId ?? 1,
+          pointAmount: body.pointAmount ?? '100.00',
+          priceSnapshot: null,
+          contractQuantity: null,
+          status: 'POINT_UNKNOWN',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     return HttpResponse.json({
       success: true,
       errorCode: null,
       message: '예측 참여가 완료되었습니다.',
       data: {
         predictionId: 1,
-        marketId: 1,
-        optionId: 1,
-        pointAmount: '100.00',
+        marketId,
+        selectedOptionId: body.marketOptionId ?? 1,
+        pointAmount: body.pointAmount ?? '100.00',
         priceSnapshot: '0.65432100',
         contractQuantity: '1.52876234',
-        fee: '1.00',
         status: 'CONFIRMED',
-        createdAt: new Date().toISOString(),
       },
       timestamp: new Date().toISOString(),
     });

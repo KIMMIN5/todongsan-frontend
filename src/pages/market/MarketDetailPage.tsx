@@ -4,7 +4,7 @@ import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
-import { MarketPredictionQuotePanel } from "@/entities/market/ui/MarketPredictionQuotePanel";
+import { CreateMarketPredictionPanel } from "@/features/market-prediction/create/ui/CreateMarketPredictionPanel";
 import { MarketSettlementRuleCard } from "@/entities/market/ui/MarketSettlementRuleCard";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
@@ -101,7 +101,7 @@ export default function MarketDetailPage() {
             <MarketSettlementRuleCard market={data} />
           </div>
 
-          <MarketPredictionQuotePanel
+          <CreateMarketPredictionPanel
             marketId={data.marketId}
             options={data.options}
             marketStatus={data.status}
