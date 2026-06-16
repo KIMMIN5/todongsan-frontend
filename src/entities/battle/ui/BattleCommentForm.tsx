@@ -1,10 +1,9 @@
+import type { ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { isApiError } from "@/shared/api/apiError";
-import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/textarea";
 
@@ -20,6 +19,8 @@ type BattleCommentFormProps = {
   isAuthenticated: boolean;
   /** 종료/취소된 배틀이면 댓글 작성 불가 */
   disabled?: boolean;
+  /** 비로그인 상태일 때 보여줄 UI (로그인 이동 정책은 page/feature에서 주입) */
+  unauthenticatedFallback?: ReactNode;
   /** 댓글 작성 성공 후 page 레벨 후처리 (예: 포인트 잔액 무효화) */
   onCommentSuccess?: () => void;
 };
@@ -28,6 +29,7 @@ export function BattleCommentForm({
   battleId,
   isAuthenticated,
   disabled,
+  unauthenticatedFallback,
   onCommentSuccess,
 }: BattleCommentFormProps) {
   const createComment = useCreateComment(battleId);
@@ -46,16 +48,7 @@ export function BattleCommentForm({
   const contentValue = useWatch({ control, name: "content" }) ?? "";
 
   if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          댓글을 작성하려면 로그인이 필요합니다.
-        </p>
-        <Button render={<Link to={ROUTE_PATH.LOGIN} />} variant="outline" size="sm">
-          로그인하기
-        </Button>
-      </div>
-    );
+    return <>{unauthenticatedFallback}</>;
   }
 
   if (disabled) {

@@ -231,6 +231,7 @@ export default function BattleDetailPage() {
             isAuthenticated={isAuthenticated}
             currentMemberId={memberId}
             currentNickname={nickname}
+            unauthenticatedFallback={<CommentLoginRequired />}
             onCommentSuccess={invalidatePointBalance}
           />
         </CardContent>
@@ -248,6 +249,23 @@ function BackLink() {
       <ArrowLeft className="size-4" />
       배틀 목록
     </Link>
+  );
+}
+
+function CommentLoginRequired() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
+      <p className="text-sm text-muted-foreground">
+        댓글을 작성하려면 로그인이 필요합니다.
+      </p>
+      <Button
+        render={<Link to={ROUTE_PATH.LOGIN} />}
+        variant="outline"
+        size="sm"
+      >
+        로그인하기
+      </Button>
+    </div>
   );
 }
 

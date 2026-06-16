@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { isApiError } from "@/shared/api/apiError";
@@ -19,6 +20,8 @@ type BattleCommentSectionProps = {
   isAuthenticated: boolean;
   currentMemberId: number | null;
   currentNickname: string | null;
+  /** 비로그인 상태일 때 댓글 작성 폼 대신 보여줄 UI (로그인 이동 정책은 page/feature에서 주입) */
+  unauthenticatedFallback?: ReactNode;
   /** 댓글 작성 성공 후 page 레벨 후처리 (예: 포인트 잔액 무효화) */
   onCommentSuccess?: () => void;
 };
@@ -29,6 +32,7 @@ export function BattleCommentSection({
   isAuthenticated,
   currentMemberId,
   currentNickname,
+  unauthenticatedFallback,
   onCommentSuccess,
 }: BattleCommentSectionProps) {
   const [page, setPage] = useState(0);
@@ -52,6 +56,7 @@ export function BattleCommentSection({
         battleId={battleId}
         isAuthenticated={isAuthenticated}
         disabled={!isCommentable}
+        unauthenticatedFallback={unauthenticatedFallback}
         onCommentSuccess={onCommentSuccess}
       />
 
