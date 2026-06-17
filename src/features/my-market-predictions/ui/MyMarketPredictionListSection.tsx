@@ -8,8 +8,8 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
 
-import type { MyMarketPredictionListParams } from "../model/prediction.types";
-import { useMyMarketPredictionsQuery } from "../model/useMyMarketPredictionsQuery";
+import type { MyMarketPredictionListParams } from "@/entities/prediction/model/prediction.types";
+import { useMyMarketPredictionListQuery } from "@/entities/prediction/model/useMyMarketPredictionListQuery";
 import {
   MyMarketPredictionFilterTabs,
   type PredictionFilterKey,
@@ -33,7 +33,7 @@ export function MyMarketPredictionListSection() {
     isError,
     error,
     refetch,
-  } = useMyMarketPredictionsQuery(filterParams);
+  } = useMyMarketPredictionListQuery(filterParams);
 
   // 누적 목록을 pages에서 직접 파생 — setState 없이 렌더 중 계산
   const accumulated = useMemo(

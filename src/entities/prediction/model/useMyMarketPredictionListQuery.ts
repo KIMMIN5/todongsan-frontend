@@ -8,7 +8,7 @@ type MyMarketPredictionFilters = Omit<MyMarketPredictionListParams, "page" | "si
 
 const PAGE_SIZE = 20;
 
-export function useMyMarketPredictionsQuery(filters: MyMarketPredictionFilters) {
+export function useMyMarketPredictionListQuery(filters: MyMarketPredictionFilters) {
   return useInfiniteQuery({
     queryKey: predictionKeys.myList(filters),
     initialPageParam: 0,
