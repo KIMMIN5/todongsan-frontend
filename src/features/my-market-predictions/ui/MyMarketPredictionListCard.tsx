@@ -9,8 +9,8 @@ import {
 import { Card, CardContent } from "@/shared/ui/card";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 
-import type { MyMarketPredictionListItem } from "../model/prediction.types";
-import { PredictionStatusBadge } from "./PredictionStatusBadge";
+import type { MyMarketPredictionListItem } from "@/entities/prediction/model/prediction.types";
+import { PredictionStatusBadge } from "@/entities/prediction/ui/PredictionStatusBadge";
 
 type MyMarketPredictionListCardProps = {
   item: MyMarketPredictionListItem;

@@ -155,6 +155,9 @@ export function CreateMarketPredictionPanel({
             queryKey: predictionKeys.myMarketPrediction(variables.marketId),
           });
           queryClient.invalidateQueries({
+            queryKey: predictionKeys.myLists(),
+          });
+          queryClient.invalidateQueries({
             queryKey: marketKeys.detail(variables.marketId),
           });
           queryClient.invalidateQueries({

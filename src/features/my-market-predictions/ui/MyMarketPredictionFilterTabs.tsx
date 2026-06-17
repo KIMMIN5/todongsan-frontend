@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib/utils";
 import type { MarketDisplayStatus } from "@/entities/market/model/market.types";
 
-import type { MyMarketPredictionListParams, PredictionStatus } from "../model/prediction.types";
+import type { MyMarketPredictionListParams, PredictionStatus } from "@/entities/prediction/model/prediction.types";
 
 export type PredictionFilterKey =
   | "all"
