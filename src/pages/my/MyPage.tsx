@@ -7,6 +7,7 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { buttonVariants } from "@/shared/ui/button";
 import { useMyProfileQuery } from "@/entities/member/model/member.queries";
 import { usePointBalanceQuery } from "@/entities/point/model/point.queries";
+import { MyMarketPredictionListSection } from "@/entities/prediction/ui/MyMarketPredictionListSection";
 import { formatDate } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { cn } from "@/shared/lib/utils";
@@ -120,17 +121,7 @@ export function MyPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border-slate-200 bg-white">
-            <CardHeader>
-              <CardTitle className="text-base font-bold">최근 참여 내역</CardTitle>
-              <CardDescription className="text-xs">현재 참여하신 예측 마켓 또는 배틀이 없습니다.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-6 text-slate-400 text-xs">
-                참여 내역이 비어 있습니다. 홈 또는 마켓 목록에서 흥미로운 이슈를 확인해 보세요!
-              </div>
-            </CardContent>
-          </Card>
+          <MyMarketPredictionListSection />
         </div>
       </div>
     </PageContainer>

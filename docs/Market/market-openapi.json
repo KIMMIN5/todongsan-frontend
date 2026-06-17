@@ -1217,6 +1217,156 @@
         }
       }
     },
+    "/api/v1/markets/predictions/me": {
+      "get": {
+        "tags": [
+          "Market Prediction API",
+          "Market Public API"
+        ],
+        "summary": "내 예측 목록 조회",
+        "description": "Gateway가 주입한 X-Member-Id 기준으로 로그인 사용자의 Market Prediction 목록을 조회한다. 마이페이지용 API다.\n참여 내역이 없으면 404가 아니라 200 + 빈 content를 반환한다.\n이 API는 Market 목록 조회 후 각 Market마다 단건 조회를 반복하는 N+1 방식을 대체한다.\n",
+        "operationId": "getMyPredictions",
+        "parameters": [
+          {
+            "name": "X-Member-Id",
+            "in": "header",
+            "description": "Gateway가 주입하는 회원 ID. Market Service는 JWT를 직접 파싱하지 않는다.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 10
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "페이지 번호. 0부터 시작",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0,
+              "minimum": 0
+            },
+            "example": 0
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "페이지 크기. 기본값 20",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "marketDisplayStatus",
+            "in": "query",
+            "description": "프론트 표시용 Market 상태 필터. 반복 파라미터와 콤마 구분 모두 지원한다. ACTIVE = status=ACTIVE && closeAt > now, CLOSED_BY_TIME = status=ACTIVE && closeAt <= now.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "CLOSED_BY_TIME",
+                  "PENDING",
+                  "CLOSED",
+                  "DATA_PENDING",
+                  "SETTLEMENT_IN_PROGRESS",
+                  "SETTLED",
+                  "VOIDED"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "examples": {
+              "single": {
+                "summary": "단일 값",
+                "value": [
+                  "ACTIVE"
+                ]
+              },
+              "multiple": {
+                "summary": "복수 값",
+                "value": [
+                  "ACTIVE",
+                  "CLOSED_BY_TIME"
+                ]
+              }
+            }
+          },
+          {
+            "name": "predictionStatus",
+            "in": "query",
+            "description": "Prediction 상태 필터. 반복 파라미터와 콤마 구분 모두 지원한다.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "POINT_PENDING",
+                  "POINT_UNKNOWN",
+                  "CONFIRMED",
+                  "FAILED",
+                  "SETTLED",
+                  "REFUND_PENDING",
+                  "REFUND_UNKNOWN",
+                  "REFUNDED"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "examples": {
+              "single": {
+                "summary": "단일 값",
+                "value": [
+                  "CONFIRMED"
+                ]
+              },
+              "multiple": {
+                "summary": "복수 값",
+                "value": [
+                  "POINT_PENDING",
+                  "POINT_UNKNOWN"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "내 예측 목록 조회 성공. 참여 내역이 없으면 content=[]로 응답한다.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMyMarketPredictionListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMyMarketPredictionListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/markets/{marketId}/predictions/me": {
       "get": {
         "tags": [
@@ -2697,6 +2847,176 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseMyMarketPredictionListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MyMarketPredictionListPageResponse"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MyMarketPredictionListPageResponse": {
+        "type": "object",
+        "description": "내 예측 목록 페이지 응답. 참여 내역이 없으면 content=[]로 응답한다.",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMarketPredictionListItemResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MyMarketPredictionListItemResponse": {
+        "type": "object",
+        "description": "내 예측 목록 항목. marketTitle, marketDisplayStatus, canPredict 등 Market 정보를 포함한다.",
+        "properties": {
+          "predictionId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Prediction ID",
+            "example": 100
+          },
+          "marketId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Market ID",
+            "example": 1
+          },
+          "marketTitle": {
+            "type": "string",
+            "description": "Market 제목",
+            "example": "Gateway E2E Negative"
+          },
+          "marketStatus": {
+            "type": "string",
+            "description": "DB 기준 Market 상태",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED",
+              "DATA_PENDING",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ],
+            "example": "ACTIVE"
+          },
+          "marketDisplayStatus": {
+            "type": "string",
+            "description": "프론트 표시용 Market 상태. status=ACTIVE이더라도 closeAt이 지나면 CLOSED_BY_TIME으로 반환될 수 있다.",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "CLOSED_BY_TIME",
+              "DATA_PENDING",
+              "CLOSED",
+              "SETTLEMENT_IN_PROGRESS",
+              "SETTLED",
+              "VOIDED"
+            ],
+            "example": "CLOSED_BY_TIME"
+          },
+          "canPredict": {
+            "type": "boolean",
+            "description": "현재 시점 기준 예측 참여 가능 여부",
+            "example": false
+          },
+          "selectedOptionId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "사용자가 선택한 option ID",
+            "example": 2
+          },
+          "selectedOptionContent": {
+            "type": "string",
+            "description": "사용자가 선택한 option 표시명",
+            "example": "YES"
+          },
+          "pointAmount": {
+            "type": "string",
+            "description": "예측 참여 포인트. Decimal String으로 응답",
+            "example": "50.00"
+          },
+          "priceSnapshot": {
+            "type": "string",
+            "nullable": true,
+            "description": "체결 가격. Decimal String으로 응답. POINT_PENDING/POINT_UNKNOWN 상태에서는 null일 수 있다.",
+            "example": "0.50000000"
+          },
+          "contractQuantity": {
+            "type": "string",
+            "nullable": true,
+            "description": "계약 수량. Decimal String으로 응답. POINT_PENDING/POINT_UNKNOWN 상태에서는 null일 수 있다.",
+            "example": "100.00000000"
+          },
+          "predictionStatus": {
+            "type": "string",
+            "description": "Prediction 상태",
+            "enum": [
+              "POINT_PENDING",
+              "CONFIRMED",
+              "FAILED",
+              "POINT_UNKNOWN",
+              "SETTLED",
+              "REFUND_PENDING",
+              "REFUND_UNKNOWN",
+              "REFUNDED"
+            ],
+            "example": "CONFIRMED"
+          },
+          "closeAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Market 마감 시각",
+            "example": "2026-06-16T10:41:00"
+          },
+          "settledAmount": {
+            "type": "string",
+            "nullable": true,
+            "description": "정산 지급 금액. Decimal String으로 응답. 정산 전이면 null",
+            "example": null
+          },
+          "refundAmount": {
+            "type": "string",
+            "nullable": true,
+            "description": "환불 금액. Decimal String으로 응답. 환불 전이면 null",
+            "example": null
           }
         }
       }

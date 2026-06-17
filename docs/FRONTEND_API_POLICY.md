@@ -779,6 +779,206 @@ API 연동 PR은 다음 항목을 확인한다.
 
 ---
 
+## 23. 내 예측 목록 조회 API
+
+### Endpoint
+
+```http
+GET /api/v1/markets/predictions/me?page=0&size=20
+```
+
+### 설명
+
+마이페이지에서 로그인 사용자가 자신이 참여한 Market Prediction 목록을 조회한다.
+
+Gateway가 JWT 인증 후 주입한 `X-Member-Id` 기준으로 조회한다.  
+Market Service는 JWT를 직접 파싱하지 않는다.
+
+이 API는 Market 목록을 조회한 뒤 각 Market마다 `/predictions/me`를 반복 호출하는 N+1 방식을 대체하기 위한 사용자 전용 목록 API다.
+
+기존 단건 API와 혼동하지 않는다.
+
+| API | 용도 |
+|---|---|
+| `GET /api/v1/markets/{marketId}/predictions/me` | 특정 Market 상세에서 내 예측 상태 조회, POINT_PENDING/POINT_UNKNOWN polling |
+| `GET /api/v1/markets/predictions/me` | 마이페이지에서 내가 참여한 Market Prediction 목록 조회 |
+
+### Query Parameters
+
+| 이름                    | 타입       | 필수 | 설명                                                 |
+| --------------------- | -------- | -- | -------------------------------------------------- |
+| page                  | int      | X  | 페이지 번호. 기본값 0                                      |
+| size                  | int      | X  | 페이지 크기. 기본값 20                                     |
+| marketDisplayStatus   | string[] | X  | 프론트 표시용 Market 상태 필터. 반복 파라미터와 콤마 구분 모두 지원         |
+| predictionStatus      | string[] | X  | Prediction 상태 필터. 반복 파라미터와 콤마 구분 모두 지원             |
+
+#### marketDisplayStatus enum
+
+| 값                       | 조건                                      |
+| ----------------------- | --------------------------------------- |
+| `ACTIVE`                | `market.status = ACTIVE && closeAt > now` |
+| `CLOSED_BY_TIME`        | `market.status = ACTIVE && closeAt <= now` |
+| `PENDING`               | DB status 기반                            |
+| `CLOSED`                | DB status 기반                            |
+| `DATA_PENDING`          | DB status 기반                            |
+| `SETTLEMENT_IN_PROGRESS` | DB status 기반                            |
+| `SETTLED`               | DB status 기반                            |
+| `VOIDED`                | DB status 기반                            |
+
+`ACTIVE`와 `CLOSED_BY_TIME`은 DB `market.status`만으로 구분되지 않는다.  
+`closeAt`과 현재 시각을 비교해 서버가 계산한 표시용 상태다.
+
+#### predictionStatus enum
+
+```text
+POINT_PENDING
+POINT_UNKNOWN
+CONFIRMED
+FAILED
+SETTLED
+REFUND_PENDING
+REFUND_UNKNOWN
+REFUNDED
+```
+
+#### 필터 사용 예시
+
+```http
+# 진행 중인 마켓의 내 예측만 조회
+GET /api/v1/markets/predictions/me?marketDisplayStatus=ACTIVE
+
+# 마감된 마켓의 내 예측만 조회
+GET /api/v1/markets/predictions/me?marketDisplayStatus=CLOSED_BY_TIME
+
+# 처리 중 상태인 내 예측만 조회 (반복 파라미터)
+GET /api/v1/markets/predictions/me?predictionStatus=POINT_PENDING&predictionStatus=POINT_UNKNOWN
+
+# 처리 중 상태인 내 예측만 조회 (콤마 구분)
+GET /api/v1/markets/predictions/me?predictionStatus=POINT_PENDING,POINT_UNKNOWN
+
+# 마감된 마켓의 확정된 예측만 조회 (AND 조건)
+GET /api/v1/markets/predictions/me?marketDisplayStatus=CLOSED_BY_TIME&predictionStatus=CONFIRMED
+```
+
+#### 필터 조건 정책
+
+- `marketDisplayStatus`와 `predictionStatus`를 함께 전달하면 **AND 조건**으로 동작한다.
+- 같은 파라미터를 여러 값으로 전달하면 **OR 조건**으로 동작한다.
+- 필터 결과가 없어도 404가 아니라 200 + `content: []`를 반환한다.
+
+### Headers
+
+| 이름          | 필수 | 설명                           |
+| ----------- | -- | ---------------------------- |
+| X-Member-Id | O  | Gateway가 JWT 인증 후 주입하는 회원 ID |
+
+### Response
+
+참여 내역이 없는 경우 404가 아니라 200 + 빈 content를 반환한다.
+
+```json
+{
+  "success": true,
+  "errorCode": null,
+  "message": null,
+  "data": {
+    "content": [
+      {
+        "predictionId": 100,
+        "marketId": 1,
+        "marketTitle": "Gateway E2E Negative",
+        "marketStatus": "ACTIVE",
+        "marketDisplayStatus": "CLOSED_BY_TIME",
+        "canPredict": false,
+        "selectedOptionId": 2,
+        "selectedOptionContent": "YES",
+        "pointAmount": "50.00",
+        "priceSnapshot": "0.50000000",
+        "contractQuantity": "100.00000000",
+        "predictionStatus": "CONFIRMED",
+        "closeAt": "2026-06-16T10:41:00",
+        "settledAmount": null,
+        "refundAmount": null
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 1,
+    "totalPages": 1,
+    "last": true
+  },
+  "timestamp": "2026-06-17T12:00:00"
+}
+```
+
+빈 목록 응답:
+
+```json
+{
+  "success": true,
+  "errorCode": null,
+  "message": null,
+  "data": {
+    "content": [],
+    "page": 0,
+    "size": 20,
+    "totalElements": 0,
+    "totalPages": 0,
+    "last": true
+  },
+  "timestamp": "2026-06-17T12:00:00"
+}
+```
+
+### Item 필드 설명
+
+| 필드                    | 타입      | 설명                                                        |
+| --------------------- | ------- | --------------------------------------------------------- |
+| predictionId          | Long    | Prediction ID                                             |
+| marketId              | Long    | Market ID                                                 |
+| marketTitle           | String  | Market 제목                                                 |
+| marketStatus          | String  | DB 기준 Market 상태                                           |
+| marketDisplayStatus   | String  | 프론트 표시용 Market 상태. `CLOSED_BY_TIME` 등 DB status와 다를 수 있음 |
+| canPredict            | Boolean | 현재 시점 기준 예측 참여 가능 여부                                      |
+| selectedOptionId      | Long    | 사용자가 선택한 option ID                                        |
+| selectedOptionContent | String  | 사용자가 선택한 option 표시명                                       |
+| pointAmount           | String  | 예측 참여 포인트. Decimal String                                 |
+| priceSnapshot         | String? | 체결 가격. Decimal String. POINT_PENDING/POINT_UNKNOWN이면 null 가능 |
+| contractQuantity      | String? | 계약 수량. Decimal String. POINT_PENDING/POINT_UNKNOWN이면 null 가능 |
+| predictionStatus      | String  | Prediction 상태                                             |
+| closeAt               | String  | Market 마감 시각                                              |
+| settledAmount         | String? | 정산 지급 금액. Decimal String. 정산 전이면 null 가능                  |
+| refundAmount          | String? | 환불 금액. Decimal String. 환불 전이면 null 가능                     |
+
+### 상태/null 정책
+
+`POINT_PENDING`, `POINT_UNKNOWN` 상태에서는 아래 필드가 null일 수 있다.
+
+```text
+priceSnapshot
+contractQuantity
+```
+
+프론트는 이 경우 "확인 중" 또는 "처리 중"으로 표시한다.
+
+### 발생 가능한 ErrorCode
+
+| ErrorCode         | HTTP Status | 설명                   |
+| ----------------- | ----------- | -------------------- |
+| VALIDATION_FAILED | 400         | page/size 요청 값 검증 실패 |
+
+인증 실패는 Gateway 공통 인증 정책에서 처리된다. Market ErrorCode로 분류하지 않는다.
+
+### 프론트 구현 참고
+
+- 이 API는 단건 조회 API(`GET /api/v1/markets/{marketId}/predictions/me`)와 별도로 구현한다.
+- 마이페이지에서 내 예측 목록 형태로 사용한다.
+- polling은 이 목록 API가 아니라 단건 조회 API(`GET /api/v1/markets/{marketId}/predictions/me`)를 통해 수행한다.
+- `MARKET_PREDICTION_NOT_FOUND`는 단건 API에서만 발생하며, 이 목록 API에서는 발생하지 않는다.
+- Decimal 필드(`pointAmount`, `priceSnapshot`, `contractQuantity`, `settledAmount`, `refundAmount`)는 section 16 Decimal 처리 정책을 따라 `string`으로 유지한다.
+
+---
+
 ## 22. 최종 요약
 
 Todongsan Frontend의 API 연동 기준은 다음과 같다.

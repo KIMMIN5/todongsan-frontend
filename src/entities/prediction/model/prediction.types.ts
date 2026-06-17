@@ -1,4 +1,5 @@
 import type { BaseEntity } from '@/shared/types/common';
+import type { MarketDisplayStatus, MarketStatus } from '@/entities/market/model/market.types';
 
 // 예측 상태 (market.types.ts와 동일하지만 예측 도메인에서 별도 관리)
 export type PredictionStatus = 
@@ -66,6 +67,41 @@ export type MyMarketPrediction = {
   status: PredictionStatus;
   createdAt: string;
   updatedAt: string;
+};
+
+// 내 예측 목록 (GET /api/v1/markets/predictions/me)
+export type MyMarketPredictionListItem = {
+  predictionId: number;
+  marketId: number;
+  marketTitle: string;
+  marketStatus: MarketStatus;
+  marketDisplayStatus: MarketDisplayStatus;
+  canPredict: boolean;
+  selectedOptionId: number;
+  selectedOptionContent: string;
+  pointAmount: string;
+  priceSnapshot: string | null;
+  contractQuantity: string | null;
+  predictionStatus: PredictionStatus;
+  closeAt: string;
+  settledAmount: string | null;
+  refundAmount: string | null;
+};
+
+export type MyMarketPredictionListResponse = {
+  content: MyMarketPredictionListItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+};
+
+export type MyMarketPredictionListParams = {
+  page?: number;
+  size?: number;
+  marketDisplayStatus?: MarketDisplayStatus[];
+  predictionStatus?: PredictionStatus[];
 };
 
 export type CreateMarketPredictionRequest = {

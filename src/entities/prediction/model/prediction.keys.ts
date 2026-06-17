@@ -1,10 +1,12 @@
-import type { MyPredictionListParams } from './prediction.types';
+import type { MyMarketPredictionListParams } from './prediction.types';
+
+type MyMarketPredictionFilters = Omit<MyMarketPredictionListParams, 'page' | 'size'>;
 
 export const predictionKeys = {
   all: ["predictions"] as const,
-  my: (marketId: number) => ["predictions", "me", marketId] as const,
   myMarketPrediction: (marketId: number) =>
     [...predictionKeys.all, "my-market-prediction", marketId] as const,
-  myList: (params: MyPredictionListParams) => ["predictions", "myList", params] as const,
-  stats: () => ["predictions", "stats"] as const,
+  myLists: () => [...predictionKeys.all, "my-list"] as const,
+  myList: (filters: MyMarketPredictionFilters) =>
+    [...predictionKeys.myLists(), filters] as const,
 };
