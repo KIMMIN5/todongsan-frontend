@@ -7,6 +7,8 @@ import type {
   CreateMarketPredictionRequest,
   CreateMarketPredictionResponse,
   MyMarketPrediction,
+  MyMarketPredictionListParams,
+  MyMarketPredictionListResponse,
 } from "../model/prediction.types";
 
 export async function getMyMarketPrediction(
@@ -27,6 +29,29 @@ export async function getMyMarketPrediction(
     }
     throw error;
   }
+}
+
+export async function getMyMarketPredictions(
+  params: MyMarketPredictionListParams,
+): Promise<MyMarketPredictionListResponse> {
+  // 배열 파라미터는 콤마 구분 문자열로 직렬화한다.
+  // (Axios 기본 직렬화는 predictionStatus[0]=A 형태로 보내므로 수동 변환)
+  const serialized: Record<string, unknown> = {
+    page: params.page,
+    size: params.size,
+  };
+  if (params.marketDisplayStatus?.length) {
+    serialized.marketDisplayStatus = params.marketDisplayStatus.join(",");
+  }
+  if (params.predictionStatus?.length) {
+    serialized.predictionStatus = params.predictionStatus.join(",");
+  }
+
+  const response = await httpClient.get<
+    ApiResponse<MyMarketPredictionListResponse>
+  >("/api/v1/markets/predictions/me", { params: serialized });
+
+  return response.data.data;
 }
 
 export async function createMarketPrediction(params: {
