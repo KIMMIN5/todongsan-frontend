@@ -33,7 +33,11 @@ export function MyMarketPredictionListCard({
           </p>
           <div className="flex shrink-0 gap-1.5">
             <MarketStatusBadge displayStatus={item.marketDisplayStatus} />
-            <PredictionStatusBadge status={item.predictionStatus} />
+            <PredictionStatusBadge
+              status={item.predictionStatus}
+              marketStatus={item.marketStatus}
+              marketDisplayStatus={item.marketDisplayStatus}
+            />
           </div>
         </div>
 
@@ -53,7 +57,7 @@ export function MyMarketPredictionListCard({
             label="계약 수량"
             value={
               item.contractQuantity
-                ? formatMarketPrice(item.contractQuantity)
+                ? `${formatMarketPrice(item.contractQuantity, 2)}계약`
                 : "확인 중"
             }
           />

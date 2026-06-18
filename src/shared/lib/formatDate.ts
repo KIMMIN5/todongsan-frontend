@@ -29,3 +29,28 @@ export function formatDateTime(value: string | null | undefined): string {
 
   return `${year}.${month}.${day} ${hours}:${minutes}`;
 }
+
+/**
+ * 기준 시각(now) 대비 상대 날짜를 사람이 읽기 쉬운 한국어 문구로 변환합니다.
+ * 예: "32일 후", "오늘", "3일 전"
+ * 날짜 단위(0시 기준)로 비교하므로 같은 날이면 "오늘"을 반환합니다.
+ */
+export function formatRelativeDays(
+  value: string | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (!value) return "-";
+
+  const target = new Date(value);
+  if (isNaN(target.getTime())) return value;
+
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+  const diffMs = startOfDay(target) - startOfDay(now);
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "오늘";
+  if (diffDays > 0) return `${diffDays}일 후`;
+  return `${Math.abs(diffDays)}일 전`;
+}

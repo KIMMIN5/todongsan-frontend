@@ -2,14 +2,19 @@ import { useParams } from "react-router-dom";
 
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
+import type {
+  MarketDisplayStatus,
+  MarketStatus,
+} from "@/entities/market/model/market.types";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
 import { CreateMarketPredictionPanel } from "@/features/market-prediction/create/ui/CreateMarketPredictionPanel";
-import { MarketSettlementRuleCard } from "@/entities/market/ui/MarketSettlementRuleCard";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
 import { MyMarketPredictionCard } from "@/entities/prediction/ui/MyMarketPredictionCard";
 import { isApiError } from "@/shared/api/apiError";
+import { formatDateTime } from "@/shared/lib/formatDate";
+import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -70,54 +75,65 @@ export default function MarketDetailPage() {
 
       {data && (
         <>
-          <PageHeader
-            title={data.title}
-            description={data.description ?? `마켓 ID: ${data.marketId}`}
-          />
+          {/* 상단 헤더: 상태 뱃지 + 제목 + 메타(마감/결과 발표/유동성) */}
+          <header className="space-y-2 border-b border-border pb-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <MarketStatusBadge displayStatus={data.displayStatus} />
+            </div>
+            <h1 className="text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+              {data.title}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              마감 {formatDateTime(data.closeAt)}
+              {data.resultAnnounceAt
+                ? ` · 결과 발표 ${formatDateTime(data.resultAnnounceAt)}`
+                : ""}{" "}
+              · 유동성 {formatPointAmount(data.totalPoolAmount)}
+            </p>
+          </header>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <Card>
-              <CardHeader className="gap-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    #{data.marketId}
-                  </span>
-                  <MarketStatusBadge displayStatus={data.displayStatus} />
-                </div>
-                <CardTitle>선택지</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data.options.length > 0 ? (
-                  <MarketOptionList options={data.options} />
-                ) : (
-                  <EmptyState
-                    title="등록된 선택지가 없습니다"
-                    description="이 마켓에 표시할 선택지 정보가 없습니다."
-                  />
-                )}
-              </CardContent>
-            </Card>
+          {/* 2단 레이아웃: 좌측 메인(1.6fr) + 우측 거래 패널(1fr, sticky) */}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>선택지</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {data.options.length > 0 ? (
+                    <MarketOptionList options={data.options} />
+                  ) : (
+                    <EmptyState
+                      title="등록된 선택지가 없습니다"
+                      description="이 마켓에 표시할 선택지 정보가 없습니다."
+                    />
+                  )}
+                </CardContent>
+              </Card>
 
-            <MarketSettlementRuleCard market={data} />
+              <MarketPriceHistorySection
+                marketId={data.marketId}
+                options={data.options}
+              />
+
+              <MyPredictionSection
+                marketId={data.marketId}
+                options={data.options}
+                marketStatus={data.status}
+                marketDisplayStatus={data.displayStatus}
+                enabled={isAuthenticated || hasDevMemberId()}
+              />
+            </div>
+
+            <aside className="lg:sticky lg:top-20">
+              <CreateMarketPredictionPanel
+                marketId={data.marketId}
+                options={data.options}
+                canPredict={data.canPredict}
+                displayStatus={data.displayStatus}
+              />
+            </aside>
           </div>
-
-          <CreateMarketPredictionPanel
-            marketId={data.marketId}
-            options={data.options}
-            canPredict={data.canPredict}
-            displayStatus={data.displayStatus}
-          />
-
-          <MyPredictionSection
-            marketId={data.marketId}
-            options={data.options}
-            enabled={isAuthenticated || hasDevMemberId()}
-          />
-
-          <MarketPriceHistorySection
-            marketId={data.marketId}
-            options={data.options}
-          />
         </>
       )}
     </PageContainer>
@@ -130,12 +146,16 @@ type MyPredictionSectionProps = {
     optionId: number;
     content: string;
   }[];
+  marketStatus: MarketStatus;
+  marketDisplayStatus: MarketDisplayStatus;
   enabled: boolean;
 };
 
 function MyPredictionSection({
   marketId,
   options,
+  marketStatus,
+  marketDisplayStatus,
   enabled,
 }: MyPredictionSectionProps) {
   const { data, error, isError, isLoading, refetch } =
@@ -217,6 +237,8 @@ function MyPredictionSection({
     <MyMarketPredictionCard
       prediction={data}
       selectedOptionLabel={selectedOptionLabel}
+      marketStatus={marketStatus}
+      marketDisplayStatus={marketDisplayStatus}
     />
   );
 }
@@ -228,28 +250,31 @@ function hasDevMemberId() {
 function MarketDetailSkeleton() {
   return (
     <>
-      <div className="space-y-2">
+      <div className="space-y-3 border-b border-border pb-5">
+        <Skeleton className="h-5 w-20 rounded-full" />
         <Skeleton className="h-8 w-2/3" />
         <Skeleton className="h-4 w-1/2" />
       </div>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-5 w-20 rounded-full" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
+        <div className="space-y-6">
+          <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+            <Skeleton className="h-6 w-24" />
+            <div className="mt-5 space-y-3">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
           </div>
-          <Skeleton className="mt-5 h-6 w-24" />
-          <div className="mt-5 space-y-3">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+          <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+            <Skeleton className="h-6 w-28" />
+            <Skeleton className="mt-5 h-40 w-full" />
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <Skeleton className="h-6 w-24" />
           <div className="mt-5 space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-10/12" />
-            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-12 w-full" />
           </div>
         </div>
       </div>

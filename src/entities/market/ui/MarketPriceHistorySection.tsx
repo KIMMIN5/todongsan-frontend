@@ -2,13 +2,17 @@ import { Suspense, lazy, useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
 
 import { isApiError } from "@/shared/api/apiError";
+import { toDecimal } from "@/shared/lib/decimal";
 import { formatPercent } from "@/shared/lib/formatDecimal";
 import { useInView } from "@/shared/lib/useInView";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { ErrorState } from "@/shared/ui/error-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 
+import { getOptionColorMap } from "../lib/optionColor";
 import { buildMarketPriceHistoryChartData } from "../lib/priceHistoryChart";
 import { useMarketPriceHistoryQuery } from "../model/useMarketPriceHistoryQuery";
 import type { MarketOption } from "../model/market.types";
@@ -47,7 +51,29 @@ export function MarketPriceHistorySection({
   const { data, error, isError, isLoading, refetch } =
     useMarketPriceHistoryQuery(marketId, params);
 
-  const { chartData, visibleOptions, latestPrices } = useMemo(
+  // 탭/최신가 색은 차트 라인과 동일한 단일 소스(optionId 고정)를 사용한다.
+  const optionColorMap = useMemo(
+    () => getOptionColorMap(options.map((option) => option.optionId)),
+    [options],
+  );
+
+  // 1위 강조: currentPrice 최댓값이 유일할 때만(동점이면 강조 없음).
+  const leaderOptionId = useMemo(() => {
+    if (options.length === 0) return undefined;
+    const maxPrice = options.reduce(
+      (max, option) => {
+        const price = toDecimal(option.currentPrice);
+        return price.greaterThan(max) ? price : max;
+      },
+      toDecimal(options[0]?.currentPrice ?? "0"),
+    );
+    const leaders = options.filter((option) =>
+      toDecimal(option.currentPrice).equals(maxPrice),
+    );
+    return leaders.length === 1 ? leaders[0].optionId : undefined;
+  }, [options]);
+
+  const { chartData, visibleOptions, latestPrices, xDomain } = useMemo(
     () =>
       buildMarketPriceHistoryChartData({
         options,
@@ -95,6 +121,12 @@ export function MarketPriceHistorySection({
                 }
                 onClick={() => setSelectedOptionId(option.optionId)}
               >
+                <span
+                  className="mr-1.5 inline-block size-2 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor: optionColorMap[option.optionId]?.base,
+                  }}
+                />
                 {option.content}
               </Button>
             ))}
@@ -115,21 +147,22 @@ export function MarketPriceHistorySection({
 
         {!isLoading && !isError && data && (
           <>
-            <div ref={chartAreaRef}>
-              {isChartInView ? (
-                <Suspense fallback={<ChartAreaSkeleton />}>
-                  <MarketPriceHistoryChart
-                    chartData={chartData}
-                    visibleOptions={visibleOptions}
-                  />
-                </Suspense>
-              ) : (
-                <ChartAreaSkeleton />
-              )}
-            </div>
-
-            {!hasHistory && (
-              <div className="flex flex-col items-center gap-2 py-2 text-center">
+            {hasHistory ? (
+              <div ref={chartAreaRef}>
+                {isChartInView ? (
+                  <Suspense fallback={<ChartAreaSkeleton />}>
+                    <MarketPriceHistoryChart
+                      chartData={chartData}
+                      visibleOptions={visibleOptions}
+                      xDomain={xDomain}
+                    />
+                  </Suspense>
+                ) : (
+                  <ChartAreaSkeleton />
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
                 <TrendingUp className="size-6 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground">
                   아직 가격 변화 이력이 없습니다.
@@ -141,24 +174,72 @@ export function MarketPriceHistorySection({
             )}
 
             {latestPrices.length > 0 && (
-              <div className="rounded-lg border border-border bg-muted/20 p-3">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  최신 가격
-                </p>
-                <div className="flex flex-wrap gap-x-6 gap-y-1">
-                  {latestPrices.map((latest) => (
-                    <div
-                      key={latest.optionId}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <span className="text-muted-foreground">
-                        {latest.content}
-                      </span>
-                      <span className="font-semibold text-foreground">
-                        {formatPercent(latest.price)}
-                      </span>
-                    </div>
-                  ))}
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    최신 가격
+                  </p>
+                  <span className="text-[11px] text-muted-foreground/70">
+                    실시간
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                  {latestPrices.map((latest) => {
+                    const color = optionColorMap[latest.optionId];
+                    const isLeader = latest.optionId === leaderOptionId;
+
+                    return (
+                      <div
+                        key={latest.optionId}
+                        className={cn(
+                          "rounded-lg p-3",
+                          !isLeader && "bg-secondary",
+                        )}
+                        style={
+                          isLeader
+                            ? { backgroundColor: `${color?.base}1a` }
+                            : undefined
+                        }
+                      >
+                        <div className="flex items-start justify-between gap-1.5">
+                          <div className="flex min-w-0 items-start gap-1.5">
+                            <span
+                              className="mt-0.5 inline-block size-2 shrink-0 rounded-full"
+                              style={{ backgroundColor: color?.base }}
+                            />
+                            <span
+                              className={cn(
+                                "line-clamp-2 text-[11px] leading-tight",
+                                !isLeader && "text-muted-foreground",
+                              )}
+                              style={
+                                isLeader ? { color: color?.darker } : undefined
+                              }
+                            >
+                              {latest.content || "-"}
+                            </span>
+                          </div>
+                          {isLeader && (
+                            <Badge
+                              className="shrink-0 border-transparent"
+                              style={{ backgroundColor: color?.darker, color: "#fff" }}
+                            >
+                              1위
+                            </Badge>
+                          )}
+                        </div>
+                        <p
+                          className={cn(
+                            "mt-1 text-[22px] font-medium tabular-nums",
+                            !isLeader && "text-foreground",
+                          )}
+                          style={isLeader ? { color: color?.darker } : undefined}
+                        >
+                          {formatPercent(latest.price)}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

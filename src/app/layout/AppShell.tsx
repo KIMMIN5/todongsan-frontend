@@ -31,7 +31,7 @@ export function AppShell() {
     <div className="min-h-screen bg-slate-50 text-slate-950 flex flex-col font-sans antialiased">
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 h-16 border-b border-slate-200 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="mx-auto max-w-[1440px] h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
 
           {/* Logo Section */}
           <div className="flex items-center gap-8">
@@ -100,13 +100,13 @@ export function AppShell() {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="flex-1 mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
         <Outlet />
       </main>
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 mt-auto">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
             &copy; {new Date().getFullYear()} 토동산. All rights reserved.
           </div>
