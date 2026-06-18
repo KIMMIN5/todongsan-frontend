@@ -1,4 +1,7 @@
-import { formatDateTime } from "@/shared/lib/formatDate";
+import type {
+  MarketDisplayStatus,
+  MarketStatus,
+} from "@/entities/market/model/market.types";
 import {
   formatMarketPrice,
   formatPercent,
@@ -12,62 +15,59 @@ import { PredictionStatusBadge } from "./PredictionStatusBadge";
 type MyMarketPredictionCardProps = {
   prediction: MyMarketPrediction;
   selectedOptionLabel?: string;
+  marketStatus?: MarketStatus;
+  marketDisplayStatus?: MarketDisplayStatus;
 };
 
 export function MyMarketPredictionCard({
   prediction,
   selectedOptionLabel,
+  marketStatus,
+  marketDisplayStatus,
 }: MyMarketPredictionCardProps) {
+  const optionLabel =
+    selectedOptionLabel ?? `옵션 ${prediction.selectedOptionId}`;
+
+  // 체결가/수량은 실제 값이 있을 때만 묶어서 표시한다.
+  // 계약 수량은 포인트가 아니므로 P 단위를 붙이지 않고 "계약"으로 표기한다.
+  const fillValue =
+    prediction.priceSnapshot && prediction.contractQuantity
+      ? `${formatPercent(prediction.priceSnapshot)} · ${formatMarketPrice(prediction.contractQuantity, 2)}계약`
+      : "체결 정보 대기";
+
   return (
     <Card>
-      <CardHeader className="gap-3">
+      <CardHeader>
         <div className="flex items-center justify-between gap-3">
-          <CardTitle>내 예측 상태</CardTitle>
-          <PredictionStatusBadge status={prediction.status} />
+          <CardTitle className="font-medium">내 예측</CardTitle>
+          <PredictionStatusBadge
+            status={prediction.status}
+            marketStatus={marketStatus}
+            marketDisplayStatus={marketDisplayStatus}
+          />
         </div>
       </CardHeader>
-      <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-        <InfoRow
-          label="선택지"
-          value={selectedOptionLabel ?? `옵션 #${prediction.selectedOptionId}`}
+      <CardContent className="grid grid-cols-2 gap-3">
+        <Metric
+          label="선택 · 참여"
+          value={`${optionLabel} · ${formatPointAmount(prediction.pointAmount)}`}
         />
-        <InfoRow
-          label="참여 포인트"
-          value={formatPointAmount(prediction.pointAmount)}
-        />
-        <InfoRow
-          label="체결 가격"
-          value={
-            prediction.priceSnapshot
-              ? formatPercent(prediction.priceSnapshot)
-              : "처리 중"
-          }
-        />
-        <InfoRow
-          label="계약 수량"
-          value={
-            prediction.contractQuantity
-              ? formatMarketPrice(prediction.contractQuantity)
-              : "처리 중"
-          }
-        />
-        <InfoRow label="생성 시각" value={formatDateTime(prediction.createdAt)} />
-        <InfoRow label="갱신 시각" value={formatDateTime(prediction.updatedAt)} />
+        <Metric label="체결가 · 수량" value={fillValue} />
       </CardContent>
     </Card>
   );
 }
 
-type InfoRowProps = {
+type MetricProps = {
   label: string;
   value: string;
 };
 
-function InfoRow({ label, value }: InfoRowProps) {
+function Metric({ label, value }: MetricProps) {
   return (
-    <div>
+    <div className="rounded-lg bg-muted/40 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-semibold text-foreground">{value}</p>
+      <p className="mt-1 text-sm font-medium text-foreground">{value}</p>
     </div>
   );
 }

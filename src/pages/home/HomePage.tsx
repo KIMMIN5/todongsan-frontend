@@ -70,7 +70,7 @@ export function HomePage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white shadow-md">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0c_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0c_1px,transparent_1px)] bg-[size:24px_24px]" />
-        <div className="relative px-6 py-12 sm:px-12 sm:py-16 md:py-20 lg:px-16 max-w-3xl space-y-6">
+        <div className="relative mx-auto px-6 py-12 sm:px-12 sm:py-16 md:py-20 lg:px-16 max-w-3xl space-y-6 text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200 backdrop-blur-md">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             실시간 부동산 이슈 분석 플랫폼
