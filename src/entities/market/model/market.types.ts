@@ -21,6 +21,8 @@ export type MarketListParams = {
   page?: number;
   size?: number;
   status?: MarketStatus;
+  displayStatus?: MarketDisplayStatus;
+  sort?: string;
   keyword?: string;
 };
 
@@ -52,6 +54,8 @@ export type MarketSummary = {
   displayStatus: MarketDisplayStatus;
   closeAt: string;
   totalPoolAmount: string;
+  /** 실제 참여 풀(인기 정렬 기준). 응답에 없으면 totalPoolAmount로 폴백. Decimal string */
+  totalRealPoolAmount?: string;
   options: MarketOption[];
 };
 

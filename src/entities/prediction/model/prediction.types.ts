@@ -67,6 +67,13 @@ export type MyMarketPrediction = {
   status: PredictionStatus;
   createdAt: string;
   updatedAt: string;
+  // 예상 정산/손익 (CONFIRMED에서만 값, 그 외 상태는 null) — 모두 Decimal string
+  currentPayoutPerContract?: string | null;
+  estimatedPayoutIfWin?: string | null;
+  estimatedProfitIfWin?: string | null;
+  estimatedProfitRateIfWin?: string | null;
+  // 실제 정산금 (SETTLED 시) — Decimal string
+  settledAmount?: string | null;
 };
 
 // 내 예측 목록 (GET /api/v1/markets/predictions/me)

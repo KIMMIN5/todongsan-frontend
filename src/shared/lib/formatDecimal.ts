@@ -4,10 +4,16 @@ import { toDecimal } from "./decimal";
  * 포인트 값을 포맷팅합니다. 천 단위 구분 쉼표와 'P' 접미사를 붙입니다.
  * 예: "1250.5" -> "1,250.5P"
  */
-export function formatPointAmount(value: string | null | undefined): string {
+export function formatPointAmount(
+  value: string | null | undefined,
+  maxFractionDigits?: number,
+): string {
   if (value === null || value === undefined || value === "") return "-";
 
-  const d = toDecimal(value);
+  const d =
+    maxFractionDigits === undefined
+      ? toDecimal(value)
+      : toDecimal(value).toDecimalPlaces(maxFractionDigits);
   const parts = d.toString().split(".");
   const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   const fractionalPart = parts[1] ? `.${parts[1]}` : "";
