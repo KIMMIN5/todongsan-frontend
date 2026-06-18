@@ -9,10 +9,28 @@ import type {
   BattlePage,
   BattleResult,
   BattleSummary,
+  CreateBattleRequest,
+  CreateBattleResponse,
   CreateCommentRequest,
   CreateVoteRequest,
+  MyBattleVoteItem,
+  MyBattleVoteListParams,
+  MyCreatedBattleItem,
+  MyCreatedBattleListParams,
   VoteResponse,
 } from "../model/battle.types";
+
+// POST /api/v1/battles (인증 필요)
+export async function createBattle(
+  request: CreateBattleRequest,
+): Promise<CreateBattleResponse> {
+  const response = await httpClient.post<ApiResponse<CreateBattleResponse>>(
+    "/api/v1/battles",
+    request,
+  );
+
+  return response.data.data;
+}
 
 // GET /api/v1/battles
 export async function getBattleList(
@@ -22,6 +40,46 @@ export async function getBattleList(
     "/api/v1/battles",
     { params },
   );
+
+  return response.data.data;
+}
+
+// GET /api/v1/battles/votes/me (인증 필요) - 내 참여(투표) 배틀 목록
+export async function getMyBattleVotes(
+  params: MyBattleVoteListParams,
+): Promise<BattlePage<MyBattleVoteItem>> {
+  // status 배열은 콤마 구분 문자열로 직렬화 (Axios 기본 직렬화 회피)
+  const serialized: Record<string, unknown> = {
+    page: params.page,
+    size: params.size,
+  };
+  if (params.status?.length) {
+    serialized.status = params.status.join(",");
+  }
+
+  const response = await httpClient.get<
+    ApiResponse<BattlePage<MyBattleVoteItem>>
+  >("/api/v1/battles/votes/me", { params: serialized });
+
+  return response.data.data;
+}
+
+// GET /api/v1/battles/created/me (인증 필요) - 내가 만든 배틀 목록
+export async function getMyCreatedBattles(
+  params: MyCreatedBattleListParams,
+): Promise<BattlePage<MyCreatedBattleItem>> {
+  // status 배열은 콤마 구분 문자열로 직렬화 (Axios 기본 직렬화 회피)
+  const serialized: Record<string, unknown> = {
+    page: params.page,
+    size: params.size,
+  };
+  if (params.status?.length) {
+    serialized.status = params.status.join(",");
+  }
+
+  const response = await httpClient.get<
+    ApiResponse<BattlePage<MyCreatedBattleItem>>
+  >("/api/v1/battles/created/me", { params: serialized });
 
   return response.data.data;
 }
