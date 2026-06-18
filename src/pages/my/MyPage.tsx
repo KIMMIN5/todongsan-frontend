@@ -7,6 +7,8 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { buttonVariants } from "@/shared/ui/button";
 import { useMyProfileQuery } from "@/entities/member/model/member.queries";
 import { usePointBalanceQuery } from "@/entities/point/model/point.queries";
+import { useMyReputationQuery } from "@/entities/reputation/model/useMyReputationQuery";
+import { ReputationSummaryCard } from "@/entities/reputation/ui/ReputationSummaryCard";
 import { formatDate } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { cn } from "@/shared/lib/utils";
@@ -20,6 +22,7 @@ const MEMBER_ROLE_LABEL: Record<string, string> = {
 export function MyPage() {
   const profileQuery = useMyProfileQuery();
   const balanceQuery = usePointBalanceQuery();
+  const reputationQuery = useMyReputationQuery();
 
   if (profileQuery.isError) {
     return (
@@ -131,6 +134,14 @@ export function MyPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* 신뢰도 요약 */}
+          {reputationQuery.isPending && (
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          )}
+          {!reputationQuery.isPending && reputationQuery.data && (
+            <ReputationSummaryCard reputation={reputationQuery.data} />
+          )}
         </div>
       </div>
     </PageContainer>

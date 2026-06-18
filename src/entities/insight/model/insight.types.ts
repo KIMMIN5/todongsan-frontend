@@ -4,12 +4,11 @@ import type { BaseEntity } from '@/shared/types/common';
 export type InsightReportType = 'MARKET' | 'BATTLE';
 
 // 인사이트 리포트 상태
-export type InsightReportStatus = 
+export type InsightReportStatus =
   | 'PENDING'     // 생성 대기
   | 'PROCESSING'  // 생성 중
-  | 'COMPLETED'   // 생성 완료
-  | 'FAILED'      // 생성 실패
-  | 'UNKNOWN';    // 상태 불명
+  | 'DONE'        // 생성 완료
+  | 'FAILED';     // 생성 실패
 
 // 인사이트 리포트
 export interface InsightReport extends BaseEntity {
