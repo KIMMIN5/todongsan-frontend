@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,8 @@ import {
 import { Skeleton } from "@/shared/ui/skeleton";
 import { ErrorState } from "@/shared/ui/error-state";
 import { useMyProfileQuery, useUpdateProfileMutation } from "@/entities/member/model/member.queries";
+import { useMyReputationQuery } from "@/entities/reputation/model/useMyReputationQuery";
+import { useUpdateResidenceMutation } from "@/entities/reputation/model/useUpdateResidenceMutation";
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { SIDO_LIST, SIGUNGU_MAP } from "@/shared/constants/regions";
 import { formatDate } from "@/shared/lib/formatDate";
@@ -132,9 +134,10 @@ export default function ProfileEditPage() {
 
   return (
     <PageContainer>
-      <PageHeader title="내 정보 수정" description="닉네임과 거주지 정보를 수정할 수 있습니다." />
+      <PageHeader title="내 정보 수정" description="닉네임, 거주지 프로필과 신뢰도 거주지 선언을 관리하세요." />
 
-      <Card className="mx-auto w-full max-w-lg rounded-2xl border-slate-200 bg-white">
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-6">
+      <Card className="rounded-2xl border-slate-200 bg-white">
         <CardHeader>
           <CardTitle className="text-base font-bold">기본 정보</CardTitle>
           <CardDescription className="text-xs">
@@ -230,6 +233,145 @@ export default function ProfileEditPage() {
           )}
         </CardContent>
       </Card>
+
+      <ResidenceDeclarationCard />
+      </div>
     </PageContainer>
+  );
+}
+
+const REPUTATION_COOLDOWN_DAYS = 30;
+
+function ResidenceDeclarationCard() {
+  const reputationQuery = useMyReputationQuery();
+  const updateMutation = useUpdateResidenceMutation();
+  const reputation = reputationQuery.data;
+
+  const [sido, setSido] = useState("");
+  const [sigu, setSigu] = useState("");
+
+  useEffect(() => {
+    if (reputation) {
+      setSido(reputation.residenceSido ?? "");
+      setSigu(reputation.residenceSigu ?? "");
+    }
+  }, [reputation]);
+
+  const cooldown = useMemo(() => {
+    if (!reputation?.residenceChangedAt) return null;
+    const changedAt = new Date(reputation.residenceChangedAt);
+    if (isNaN(changedAt.getTime())) return null;
+    const nextEligibleAt = new Date(changedAt);
+    nextEligibleAt.setDate(nextEligibleAt.getDate() + REPUTATION_COOLDOWN_DAYS);
+    return new Date() < nextEligibleAt ? { nextEligibleAt: nextEligibleAt.toISOString() } : null;
+  }, [reputation?.residenceChangedAt]);
+
+  const isLocked = !!cooldown;
+  const sigunguOptions = sido ? SIGUNGU_MAP[sido] ?? [] : [];
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!sido || !sigu) {
+      toast.error("시/도와 시/군/구를 모두 선택해주세요.");
+      return;
+    }
+    updateMutation.mutate(
+      { residenceSido: sido, residenceSigu: sigu },
+      {
+        onSuccess: () => toast.success("거주지역이 선언되었습니다."),
+        onError: (error) => {
+          const apiError = toApiError(error);
+          if (apiError.errorCode === "RESIDENCE_CHANGE_COOLDOWN") {
+            const dateStr = cooldown
+              ? formatDate(cooldown.nextEligibleAt)
+              : `${REPUTATION_COOLDOWN_DAYS}일 후`;
+            toast.error(`${dateStr} 이후 변경 가능합니다.`);
+          } else {
+            toast.error(apiError.message);
+          }
+        },
+      },
+    );
+  }
+
+  return (
+    <Card className="rounded-2xl border-slate-200 bg-white">
+      <CardHeader>
+        <CardTitle className="text-base font-bold">거주지역 신뢰도 선언</CardTitle>
+        <CardDescription className="text-xs">
+          선언한 지역은 AI 분석 및 신뢰도 점수에 반영됩니다.
+          변경 후 {REPUTATION_COOLDOWN_DAYS}일 동안 재변경할 수 없습니다.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {reputationQuery.isPending ? (
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">시/도</label>
+                <Select
+                  value={sido || undefined}
+                  onValueChange={(value) => {
+                    setSido(value);
+                    setSigu("");
+                  }}
+                  disabled={isLocked}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="시/도 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SIDO_LIST.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">시/군/구</label>
+                <Select
+                  value={sigu || undefined}
+                  onValueChange={setSigu}
+                  disabled={isLocked || !sido}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="시/군/구 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sigunguOptions.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {isLocked && cooldown && (
+              <p className="text-xs text-slate-500">
+                거주지 신뢰도 선언은 {formatDate(cooldown.nextEligibleAt)} 이후에 다시 변경할 수 있습니다.
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLocked || updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "저장 중..." : "거주지 선언하기"}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -15,6 +15,7 @@ export interface Reputation extends BaseEntity {
   predictionAccuracy: number; // 예측 정확도 (%)
   residenceSido?: string;
   residenceSigu?: string;
+  residenceChangedAt?: string; // 마지막 거주지 변경 일시 (쿨다운 계산용)
   activityConfirmed: boolean; // 활동 지역 인증 여부
   activityConfirmedAt?: string;
   visitCertifications?: VisitCertification[]; // 방문 인증 내역 (본인 조회시)
