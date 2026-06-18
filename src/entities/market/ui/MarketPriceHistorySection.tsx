@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { ErrorState } from "@/shared/ui/error-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 
+import { MARKET_CAPTIONS } from "../lib/marketLabels";
 import { getOptionColorMap } from "../lib/optionColor";
 import { buildMarketPriceHistoryChartData } from "../lib/priceHistoryChart";
 import { useMarketPriceHistoryQuery } from "../model/useMarketPriceHistoryQuery";
@@ -95,7 +96,7 @@ export function MarketPriceHistorySection({
     <Card>
       <CardHeader className="gap-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>가격 변화</CardTitle>
+          <CardTitle>예측률 변화</CardTitle>
           <span className="text-xs text-muted-foreground">
             최근 {SIZE}개 이력
           </span>
@@ -177,7 +178,7 @@ export function MarketPriceHistorySection({
               <div className="space-y-2 rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground">
-                    최신 가격
+                    최신 예측률
                   </p>
                   <span className="text-[11px] text-muted-foreground/70">
                     실시간
@@ -241,6 +242,9 @@ export function MarketPriceHistorySection({
                     );
                   })}
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {MARKET_CAPTIONS.predictionRate}
+                </p>
               </div>
             )}
           </>

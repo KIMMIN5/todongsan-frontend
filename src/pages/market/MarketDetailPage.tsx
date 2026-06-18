@@ -6,6 +6,7 @@ import type {
   MarketDisplayStatus,
   MarketStatus,
 } from "@/entities/market/model/market.types";
+import { getOptionColorMap } from "@/entities/market/lib/optionColor";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
 import { CreateMarketPredictionPanel } from "@/features/market-prediction/create/ui/CreateMarketPredictionPanel";
@@ -88,7 +89,8 @@ export default function MarketDetailPage() {
               {data.resultAnnounceAt
                 ? ` · 결과 발표 ${formatDateTime(data.resultAnnounceAt)}`
                 : ""}{" "}
-              · 유동성 {formatPointAmount(data.totalPoolAmount)}
+              · 유동성{" "}
+              {formatPointAmount(data.totalRealPoolAmount ?? data.totalPoolAmount)}
             </p>
           </header>
 
@@ -233,12 +235,17 @@ function MyPredictionSection({
     (option) => option.optionId === data.selectedOptionId,
   )?.content;
 
+  const optionColor = getOptionColorMap(options.map((option) => option.optionId))[
+    data.selectedOptionId
+  ];
+
   return (
     <MyMarketPredictionCard
       prediction={data}
       selectedOptionLabel={selectedOptionLabel}
       marketStatus={marketStatus}
       marketDisplayStatus={marketDisplayStatus}
+      optionColor={optionColor}
     />
   );
 }

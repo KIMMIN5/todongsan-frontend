@@ -3,6 +3,7 @@ import { decimalToPercentValue, formatPercent } from "@/shared/lib/formatDecimal
 import { cn } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 
+import { MARKET_CAPTIONS } from "../lib/marketLabels";
 import { getOptionColorMap } from "../lib/optionColor";
 import type { MarketOption } from "../model/market.types";
 
@@ -33,7 +34,8 @@ export function MarketOptionList({ options }: MarketOptionListProps) {
       : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      <div className="space-y-4">
       {options.map((option) => {
         const color = colorMap[option.optionId];
         const isLeader = option.optionId === leaderId;
@@ -79,6 +81,10 @@ export function MarketOptionList({ options }: MarketOptionListProps) {
           </div>
         );
       })}
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        {MARKET_CAPTIONS.predictionRate}
+      </p>
     </div>
   );
 }

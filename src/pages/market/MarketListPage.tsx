@@ -21,7 +21,7 @@ export function MarketListPage() {
     <PageContainer>
       <PageHeader
         title="예측 마켓"
-        description="다양한 부동산 관련 지표 및 거래 가격 예측에 포인트를 베팅하세요."
+        description="다양한 부동산 관련 지표와 가격을 예측하고 포인트로 참여해보세요."
       />
 
       {isLoading && <MarketListSkeleton />}

@@ -54,3 +54,28 @@ export function formatRelativeDays(
   if (diffDays > 0) return `${diffDays}일 후`;
   return `${Math.abs(diffDays)}일 전`;
 }
+
+/**
+ * 마감 시각을 D-day 문구로 변환합니다. (날짜 단위, 0시 기준)
+ * 예: 지난 경우 "마감", 당일 "오늘 마감", 그 외 "마감 D-N"
+ */
+export function formatDday(
+  value: string | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (!value) return "-";
+
+  const target = new Date(value);
+  if (isNaN(target.getTime())) return value;
+
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+  const diffDays = Math.round(
+    (startOfDay(target) - startOfDay(now)) / (1000 * 60 * 60 * 24),
+  );
+
+  if (diffDays < 0) return "마감";
+  if (diffDays === 0) return "오늘 마감";
+  return `마감 D-${diffDays}`;
+}
