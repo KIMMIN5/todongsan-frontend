@@ -1,9 +1,11 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { Plus } from "lucide-react";
 
 import { BattleCard } from "@/entities/battle/ui/BattleCard";
 import { useBattleListQuery } from "@/entities/battle/model/useBattleListQuery";
 import type { BattleListStatus } from "@/entities/battle/model/battle.types";
 import { isApiError } from "@/shared/api/apiError";
+import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
@@ -45,6 +47,12 @@ export function BattleListPage() {
       <PageHeader
         title="선호 배틀"
         description="지역, 아파트 단지, 주거 인프라 입지 대결에 투표하고 의견을 나누어 보세요."
+        actions={
+          <Button render={<Link to={ROUTE_PATH.BATTLE_CREATE} />} size="sm">
+            <Plus className="size-4" />
+            배틀 만들기
+          </Button>
+        }
       />
 
       {/* 상태 탭 */}

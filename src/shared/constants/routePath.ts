@@ -4,6 +4,7 @@ export const ROUTE_PATH = {
   KAKAO_CALLBACK: "/auth/kakao/callback",
 
   BATTLES: "/battles",
+  BATTLE_CREATE: "/battles/new",
   BATTLE_DETAIL: "/battles/:battleId",
 
   MARKETS: "/markets",

@@ -6,6 +6,7 @@ import { HomePage } from '@/pages/home/HomePage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { KakaoCallbackPage } from '@/pages/auth/KakaoCallbackPage';
 import { BattleListPage } from '@/pages/battle/BattleListPage';
+import { BattleCreatePage } from '@/pages/battle/BattleCreatePage';
 import { MarketListPage } from '@/pages/market/MarketListPage';
 import { MyPage } from '@/pages/my/MyPage';
 import ProfileEditPage from '@/pages/my/ProfileEditPage';
@@ -40,6 +41,14 @@ export const router = createBrowserRouter([
       {
         path: 'battles',
         element: <BattleListPage />,
+      },
+      {
+        path: 'battles/new',
+        element: (
+          <ProtectedRoute>
+            <BattleCreatePage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'battles/:battleId',

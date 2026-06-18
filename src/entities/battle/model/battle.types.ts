@@ -102,6 +102,33 @@ export type CreateCommentRequest = {
   content: string;
 };
 
+// 배틀 생성 (POST /api/v1/battles)
+// startAt/endAt은 타임존 없는 LocalDateTime 문자열 ("YYYY-MM-DDTHH:mm:ss")
+export type CreateBattleRequest = {
+  title: string;
+  optionA: string;
+  optionB: string;
+  description?: string; // 요청에는 있으나 응답에는 포함되지 않음
+  sido?: string;
+  sigu?: string;
+  startAt: string;
+  endAt: string;
+};
+
+// 생성 응답 (status는 생성 직후 항상 "PENDING")
+export type CreateBattleResponse = {
+  battleId: number;
+  title: string;
+  optionA: string;
+  optionB: string;
+  sido: string | null;
+  sigu: string | null;
+  status: BattleStatus;
+  startAt: string;
+  endAt: string;
+  createdAt: string;
+};
+
 // ---- 파라미터 ----
 
 export type BattleListParams = {
@@ -111,6 +138,58 @@ export type BattleListParams = {
 };
 
 export type BattleCommentListParams = {
+  page?: number;
+  size?: number;
+};
+
+// ---- 내 참여(투표) 배틀 목록 (GET /api/v1/battles/votes/me) ----
+
+// 응답 item. 정산 전이면 winningOption/isWin/rewardAmount/settledAt은 null
+export type MyBattleVoteItem = {
+  battleId: number;
+  title: string;
+  optionA: string;
+  optionB: string;
+  sido: string | null;
+  sigu: string | null;
+  status: BattleStatus;
+  selectedOption: BattleOption; // 내가 투표한 선택지
+  winningOption: WinningOption | null;
+  isWin: boolean | null;
+  rewardAmount: string | null; // Decimal → string
+  settledAt: string | null;
+  votedAt: string;
+  startAt: string;
+  endAt: string;
+};
+
+export type MyBattleVoteListParams = {
+  status?: BattleListStatus[]; // ACTIVE/CLOSED, 콤마 직렬화
+  page?: number;
+  size?: number;
+};
+
+// ---- 내가 만든 배틀 목록 (GET /api/v1/battles/created/me) ----
+
+// 생성자 본인 조회라 PENDING/CANCELLED 포함 전체 상태가 내려옴
+export type MyCreatedBattleItem = {
+  battleId: number;
+  title: string;
+  optionA: string;
+  optionB: string;
+  sido: string | null;
+  sigu: string | null;
+  status: BattleStatus;
+  voteCount: number;
+  winningOption: WinningOption | null;
+  settledAt: string | null;
+  startAt: string;
+  endAt: string;
+  createdAt: string;
+};
+
+export type MyCreatedBattleListParams = {
+  status?: BattleStatus[]; // PENDING/ACTIVE/CLOSED/CANCELLED, 콤마 직렬화
   page?: number;
   size?: number;
 };
