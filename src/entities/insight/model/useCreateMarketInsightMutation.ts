@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { pointKeys } from "@/entities/point/model/point.keys";
-
 import { createMarketInsightReport } from "../api/insightApi";
 import { insightKeys } from "./insight.keys";
 
@@ -22,9 +20,6 @@ export function useCreateMarketInsightMutation() {
       });
       queryClient.invalidateQueries({
         queryKey: insightKeys.marketReportStatus(marketId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: pointKeys.balance(),
       });
     },
   });

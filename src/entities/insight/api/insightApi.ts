@@ -6,6 +6,14 @@ import type {
   InsightReportStatusInfo,
 } from "../model/insight.types";
 
+// 백엔드가 reportContent 필드로 반환하는 것을 프론트 타입의 content로 정규화
+function normalizeReport(raw: InsightReport & { reportContent?: string }): InsightReport {
+  return {
+    ...raw,
+    content: raw.content ?? raw.reportContent,
+  };
+}
+
 export async function createMarketInsightReport(
   marketId: number,
   idempotencyKey: string,
@@ -16,7 +24,7 @@ export async function createMarketInsightReport(
     { headers: { "Idempotency-Key": idempotencyKey } },
   );
 
-  return response.data.data;
+  return normalizeReport(response.data.data);
 }
 
 export async function getMarketInsightReport(
@@ -26,7 +34,7 @@ export async function getMarketInsightReport(
     `/api/v1/insights/markets/${marketId}/report`,
   );
 
-  return response.data.data;
+  return normalizeReport(response.data.data);
 }
 
 export async function getMarketInsightReportStatus(
@@ -46,7 +54,7 @@ export async function getAdminBattleInsightReport(
     `/api/v1/admin/insights/battles/${battleId}/report`,
   );
 
-  return response.data.data;
+  return normalizeReport(response.data.data);
 }
 
 // ── 사용자 배틀 AI 리포트 ──────────────────────────────────────────
@@ -61,7 +69,7 @@ export async function createBattleInsightReport(
     { headers: { "Idempotency-Key": idempotencyKey } },
   );
 
-  return response.data.data;
+  return normalizeReport(response.data.data);
 }
 
 export async function getBattleInsightReport(
@@ -71,7 +79,7 @@ export async function getBattleInsightReport(
     `/api/v1/insights/battles/${battleId}/report`,
   );
 
-  return response.data.data;
+  return normalizeReport(response.data.data);
 }
 
 export async function getBattleInsightReportStatus(

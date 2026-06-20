@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { pointKeys } from "@/entities/point/model/point.keys";
-
 import { createBattleInsightReport } from "../api/insightApi";
 import { insightKeys } from "./insight.keys";
 
@@ -22,9 +20,6 @@ export function useCreateBattleInsightMutation() {
       });
       queryClient.invalidateQueries({
         queryKey: insightKeys.battleUserReportStatus(battleId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: pointKeys.balance(),
       });
     },
   });

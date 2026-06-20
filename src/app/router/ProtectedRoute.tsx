@@ -10,8 +10,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  if (!isAuthenticated) {
-    // 로그인 후 원래 페이지로 돌아가기 위해 state에 현재 위치 저장
+  const isDevBypass =
+    import.meta.env.DEV && Boolean(import.meta.env.VITE_DEV_MEMBER_ID);
+
+  if (!isAuthenticated && !isDevBypass) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
