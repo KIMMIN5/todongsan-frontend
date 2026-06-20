@@ -9,6 +9,7 @@ import { InsightReportCard } from "@/entities/insight/ui/InsightReportCard";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { ErrorState } from "@/shared/ui/error-state";
+import { MarkdownContent } from "@/shared/ui/markdown-content";
 import { PageContainer } from "@/shared/ui/page-container";
 import { PageHeader } from "@/shared/ui/page-header";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -120,9 +121,7 @@ export default function AdminBattleReportPage() {
                 <CardTitle>AI 분석 리포트</CardTitle>
               </CardHeader>
               <CardContent>
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-                  {report.content}
-                </pre>
+                <MarkdownContent content={report.content} />
               </CardContent>
             </Card>
           )}

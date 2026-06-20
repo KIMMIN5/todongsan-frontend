@@ -15,6 +15,7 @@ import { PageContainer } from "@/shared/ui/page-container";
 import { PageHeader } from "@/shared/ui/page-header";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
+import { MarkdownContent } from "@/shared/ui/markdown-content";
 
 const POLLING_TIMEOUT_MS = 30_000;
 
@@ -173,9 +174,7 @@ export default function MarketReportPage() {
                 <CardTitle>AI 분석 리포트</CardTitle>
               </CardHeader>
               <CardContent>
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-                  {report.content}
-                </pre>
+                <MarkdownContent content={report.content} />
               </CardContent>
             </Card>
           )}

@@ -11,6 +11,7 @@ import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { ErrorState } from "@/shared/ui/error-state";
+import { MarkdownContent } from "@/shared/ui/markdown-content";
 
 import { useRequestBattleReport } from "../model/useRequestBattleReport";
 
@@ -187,9 +188,7 @@ export function BattleReportSection({
             )}
             {report.content && (
               <div className="rounded-lg border border-border bg-muted/20 p-4">
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-                  {report.content}
-                </pre>
+                <MarkdownContent content={report.content} />
               </div>
             )}
             {report.generatedAt && (
