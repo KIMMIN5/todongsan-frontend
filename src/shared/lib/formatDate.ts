@@ -30,6 +30,13 @@ export function formatDateTime(value: string | null | undefined): string {
   return `${year}.${month}.${day} ${hours}:${minutes}`;
 }
 
+export function formatKoreanMonthDay(value: string | null | undefined): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return value;
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
 /**
  * 기준 시각(now) 대비 상대 날짜를 사람이 읽기 쉬운 한국어 문구로 변환합니다.
  * 예: "32일 후", "오늘", "3일 전"

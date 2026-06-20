@@ -28,6 +28,7 @@ export function BattleReportSection({
   isAuthenticated,
 }: BattleReportSectionProps) {
   const [pollingEnabled, setPollingEnabled] = useState(false);
+  const [requestErrorMessage, setRequestErrorMessage] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
@@ -42,8 +43,7 @@ export function BattleReportSection({
     enabled: pollingEnabled,
   });
 
-  const { requestReport, isPending: isRequesting, error: requestError } =
-    useRequestBattleReport(battleId);
+  const { requestReport, isPending: isRequesting } = useRequestBattleReport(battleId);
 
   const isNotFound =
     isApiError(reportError) &&
@@ -52,10 +52,12 @@ export function BattleReportSection({
   const isInProgress =
     report?.status === "PENDING" || report?.status === "PROCESSING";
 
+  // report가 PENDING/PROCESSING이면 폴링 시작
   useEffect(() => {
     if (isInProgress) setPollingEnabled(true);
   }, [isInProgress]);
 
+  // 폴링 타임아웃
   useEffect(() => {
     if (!pollingEnabled) return;
     timerRef.current = setTimeout(() => setPollingEnabled(false), POLLING_TIMEOUT_MS);
@@ -64,6 +66,7 @@ export function BattleReportSection({
     };
   }, [pollingEnabled]);
 
+  // 폴링 완료 감지
   useEffect(() => {
     if (statusData?.status === "DONE" || statusData?.status === "FAILED") {
       setPollingEnabled(false);
@@ -75,9 +78,27 @@ export function BattleReportSection({
   // 종료된 배틀에서만 노출
   if (battleStatus !== "CLOSED") return null;
 
-  const requestErrorMessage = isApiError(requestError)
-    ? requestError.message
-    : null;
+  // 분析中 조건: 리포트가 PENDING/PROCESSING이거나 폴링 중(409 후 전환)
+  const isAnalyzing = isInProgress || (pollingEnabled && isNotFound);
+
+  async function handleRequestReport() {
+    setRequestErrorMessage(null);
+    try {
+      await requestReport();
+      setPollingEnabled(true);
+    } catch (error) {
+      if (isApiError(error)) {
+        if (error.errorCode === "INSIGHT_REPORT_ALREADY_PROCESSING") {
+          // 이미 처리 중 → 폴링으로 전환
+          setPollingEnabled(true);
+        } else if (error.errorCode === "POINT_INSUFFICIENT") {
+          setRequestErrorMessage("포인트가 부족합니다.");
+        } else {
+          setRequestErrorMessage(error.message);
+        }
+      }
+    }
+  }
 
   return (
     <Card>
@@ -92,7 +113,7 @@ export function BattleReportSection({
         )}
 
         {/* 리포트 없음 → 요청 버튼 */}
-        {!isReportLoading && isNotFound && (
+        {!isReportLoading && isNotFound && !isAnalyzing && (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border/80 bg-muted/20 p-8 text-center">
             <div className="flex items-center justify-center rounded-full bg-violet-100 p-3 dark:bg-violet-950">
               <BrainCircuit className="size-8 text-violet-600 dark:text-violet-400" />
@@ -108,13 +129,7 @@ export function BattleReportSection({
               )}
             </div>
             {isAuthenticated ? (
-              <Button
-                onClick={() => {
-                  requestReport();
-                  setPollingEnabled(true);
-                }}
-                disabled={isRequesting}
-              >
+              <Button onClick={handleRequestReport} disabled={isRequesting}>
                 {isRequesting ? "요청 중..." : "AI 리포트 보기 (80P)"}
               </Button>
             ) : (
@@ -137,10 +152,10 @@ export function BattleReportSection({
           />
         )}
 
-        {/* 분석 중 */}
-        {!isReportLoading && report && isInProgress && (
+        {/* 분석 중 (PENDING/PROCESSING 또는 409 후 폴링 전환) */}
+        {!isReportLoading && isAnalyzing && (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <InsightReportStatusBadge status={report.status} />
+            {report && <InsightReportStatusBadge status={report.status} />}
             <Loader2 className="size-6 animate-spin text-violet-500" />
             <p className="text-sm text-muted-foreground">
               AI가 배틀 데이터를 분석 중입니다. 완료되면 자동으로 표시됩니다...
@@ -148,26 +163,20 @@ export function BattleReportSection({
           </div>
         )}
 
-        {/* 분석 실패 */}
+        {/* 분析 실패 */}
         {!isReportLoading && report?.status === "FAILED" && (
           <ErrorState
             title="AI 리포트 생성에 실패했습니다"
             message="다시 시도하면 포인트가 재차감되지 않습니다."
             action={
-              <Button
-                onClick={() => {
-                  requestReport();
-                  setPollingEnabled(true);
-                }}
-                disabled={isRequesting}
-              >
+              <Button onClick={handleRequestReport} disabled={isRequesting}>
                 {isRequesting ? "요청 중..." : "다시 시도"}
               </Button>
             }
           />
         )}
 
-        {/* 분석 완료 */}
+        {/* 분析 완료 */}
         {!isReportLoading && report?.status === "DONE" && (
           <div className="space-y-4">
             <InsightReportStatusBadge status="DONE" />

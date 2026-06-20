@@ -23,7 +23,7 @@ import { useMyReputationQuery } from "@/entities/reputation/model/useMyReputatio
 import { useUpdateResidenceMutation } from "@/entities/reputation/model/useUpdateResidenceMutation";
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { SIDO_LIST, SIGUNGU_MAP } from "@/shared/constants/regions";
-import { formatDate } from "@/shared/lib/formatDate";
+import { formatDate, formatKoreanMonthDay } from "@/shared/lib/formatDate";
 import { toApiError } from "@/shared/api/apiError";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
 
@@ -222,7 +222,7 @@ export default function ProfileEditPage() {
 
               {isResidenceLocked && cooldown && (
                 <p className="text-xs text-slate-500">
-                  거주지는 {formatDate(cooldown.nextEligibleAt)} 이후에 다시 변경할 수 있습니다.
+                  거주지는 {formatKoreanMonthDay(cooldown.nextEligibleAt)} 이후에 다시 변경할 수 있습니다.
                 </p>
               )}
 
@@ -283,7 +283,7 @@ function ResidenceDeclarationCard() {
           const apiError = toApiError(error);
           if (apiError.errorCode === "RESIDENCE_CHANGE_COOLDOWN") {
             const dateStr = cooldown
-              ? formatDate(cooldown.nextEligibleAt)
+              ? formatKoreanMonthDay(cooldown.nextEligibleAt)
               : `${REPUTATION_COOLDOWN_DAYS}일 후`;
             toast.error(`${dateStr} 이후 변경 가능합니다.`);
           } else {
@@ -358,7 +358,7 @@ function ResidenceDeclarationCard() {
 
             {isLocked && cooldown && (
               <p className="text-xs text-slate-500">
-                거주지 신뢰도 선언은 {formatDate(cooldown.nextEligibleAt)} 이후에 다시 변경할 수 있습니다.
+                거주지 신뢰도 선언은 {formatKoreanMonthDay(cooldown.nextEligibleAt)} 이후에 다시 변경할 수 있습니다.
               </p>
             )}
 

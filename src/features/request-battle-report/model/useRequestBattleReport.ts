@@ -6,7 +6,7 @@ export function useRequestBattleReport(battleId: number) {
   const { memberId } = useAuth();
   const mutation = useCreateBattleInsightMutation();
 
-  function requestReport() {
+  async function requestReport() {
     if (!memberId) return;
 
     const idempotencyKey = createInsightReportIdempotencyKey(
@@ -15,7 +15,7 @@ export function useRequestBattleReport(battleId: number) {
       memberId,
     );
 
-    return mutation.mutate({ battleId, idempotencyKey });
+    return mutation.mutateAsync({ battleId, idempotencyKey });
   }
 
   return {
