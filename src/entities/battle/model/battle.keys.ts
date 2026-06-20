@@ -1,4 +1,12 @@
-import type { BattleCommentListParams, BattleListParams } from "./battle.types";
+import type {
+  BattleCommentListParams,
+  BattleListParams,
+  MyBattleVoteListParams,
+  MyCreatedBattleListParams,
+} from "./battle.types";
+
+type MyBattleVoteFilters = Omit<MyBattleVoteListParams, "page" | "size">;
+type MyCreatedBattleFilters = Omit<MyCreatedBattleListParams, "page" | "size">;
 
 export const battleKeys = {
   all: ["battles"] as const,
@@ -10,6 +18,14 @@ export const battleKeys = {
   // 페이지 단위 댓글 쿼리 키
   commentsPage: (battleId: number, params: BattleCommentListParams) =>
     ["battles", "comments", battleId, params] as const,
+  // 내 참여(투표) 배틀 목록
+  myVotes: () => ["battles", "my-votes"] as const,
+  myVotesList: (filters: MyBattleVoteFilters) =>
+    ["battles", "my-votes", filters] as const,
+  // 내가 만든 배틀 목록
+  myCreated: () => ["battles", "my-created"] as const,
+  myCreatedList: (filters: MyCreatedBattleFilters) =>
+    ["battles", "my-created", filters] as const,
 };
 
 export const adminBattleKeys = {

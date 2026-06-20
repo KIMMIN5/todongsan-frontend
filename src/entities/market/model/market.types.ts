@@ -7,10 +7,22 @@ export type MarketStatus =
   | "SETTLED"
   | "VOIDED";
 
+export type MarketDisplayStatus =
+  | "PENDING"
+  | "ACTIVE"
+  | "CLOSED_BY_TIME"
+  | "DATA_PENDING"
+  | "CLOSED"
+  | "SETTLEMENT_IN_PROGRESS"
+  | "SETTLED"
+  | "VOIDED";
+
 export type MarketListParams = {
   page?: number;
   size?: number;
   status?: MarketStatus;
+  displayStatus?: MarketDisplayStatus;
+  sort?: string;
   keyword?: string;
 };
 
@@ -38,14 +50,19 @@ export type MarketSummary = {
   marketId: number;
   title: string;
   status: MarketStatus;
+  canPredict: boolean;
+  displayStatus: MarketDisplayStatus;
   closeAt: string;
   totalPoolAmount: string;
+  /** 실제 참여 풀(인기 정렬 기준). 응답에 없으면 totalPoolAmount로 폴백. Decimal string */
+  totalRealPoolAmount?: string;
   options: MarketOption[];
 };
 
 export type MarketOption = {
   optionId: number;
   content: string;
+  initialPrice?: string;
   currentPrice: string;
   realPoolAmount?: string;
   virtualPoolAmount?: string;

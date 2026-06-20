@@ -1,43 +1,46 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Calculator } from "lucide-react";
-import { type ChangeEvent, type FormEvent, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { marketKeys } from "@/entities/market/model/market.keys";
 import type {
+  MarketDisplayStatus,
   MarketOption,
   MarketPredictionQuoteResponse,
-  MarketStatus,
 } from "@/entities/market/model/market.types";
+import {
+  MARKET_CAPTIONS,
+  MARKET_LABELS,
+} from "@/entities/market/lib/marketLabels";
+import { getOptionColorMap } from "@/entities/market/lib/optionColor";
 import { useMarketPredictionQuoteMutation } from "@/entities/market/model/useMarketPredictionQuoteMutation";
 import { predictionKeys } from "@/entities/prediction/model/prediction.keys";
 import type { CreateMarketPredictionResponse } from "@/entities/prediction/model/prediction.types";
 import { useCreateMarketPredictionMutation } from "@/entities/prediction/model/useCreateMarketPredictionMutation";
 import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
 import { isApiError } from "@/shared/api/apiError";
-import {
-  formatMarketPrice,
-  formatPercent,
-  formatPointAmount,
-} from "@/shared/lib/formatDecimal";
+import { toDecimal } from "@/shared/lib/decimal";
+import { formatMarketPrice, formatPercent } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
+import { cn } from "@/shared/lib/utils";
 
 type Props = {
   marketId: number;
   options: MarketOption[];
-  marketStatus: MarketStatus;
+  canPredict: boolean;
+  displayStatus: MarketDisplayStatus;
 };
 
 const POINT_AMOUNT_PATTERN = /^(?!0+(?:\.0{1,2})?$)\d+(?:\.\d{1,2})?$/;
-const DEFAULT_NOTICE =
-  "현재 가격은 실시간으로 변동될 수 있으며, 실제 참여 시점의 가격 기준으로 계약 수량이 확정됩니다.";
+const QUICK_ADD_AMOUNTS = [10, 50, 100];
 
 export function CreateMarketPredictionPanel({
   marketId,
   options,
-  marketStatus,
+  canPredict,
+  displayStatus,
 }: Props) {
   const queryClient = useQueryClient();
 
@@ -49,7 +52,7 @@ export function CreateMarketPredictionPanel({
       : null);
 
   const hasMemberId = resolvedMemberId !== null;
-  const isMarketActive = marketStatus === "ACTIVE";
+  const isMarketActive = canPredict;
   const hasOptions = options.length > 0;
 
   const myPredictionQuery = useMyMarketPredictionQuery(marketId, {
@@ -67,63 +70,88 @@ export function CreateMarketPredictionPanel({
     options[0]?.optionId,
   );
   const [pointAmount, setPointAmount] = useState("");
-  const [validationMessage, setValidationMessage] = useState<string | null>(
-    null,
-  );
 
   const quoteMutation = useMarketPredictionQuoteMutation();
   const createMutation = useCreateMarketPredictionMutation();
+  const quoteMutate = quoteMutation.mutate;
+  const quoteReset = quoteMutation.reset;
 
   const isQuoteFormDisabled = !isMarketActive || !hasOptions;
   const disabledMessage = !isMarketActive
-    ? "ACTIVE 상태의 마켓에서만 예측에 참여할 수 있습니다."
+    ? displayStatus === "CLOSED_BY_TIME"
+      ? "마감 시간이 지나 예측에 참여할 수 없습니다."
+      : "현재 예측 참여가 불가능한 상태입니다."
     : !hasOptions
       ? "선택지가 없어 예측에 참여할 수 없습니다."
       : null;
 
+  const trimmedAmount = pointAmount.trim();
+  const isAmountValid = POINT_AMOUNT_PATTERN.test(trimmedAmount);
+  const showAmountError = trimmedAmount !== "" && !isAmountValid;
+
+  // 옵션 색은 작업 0의 단일 소스(optionId 고정)를 사용해 막대/차트/최신가와 일치시킨다.
+  const optionColorMap = getOptionColorMap(
+    options.map((option) => option.optionId),
+  );
+
+  // 자동 견적: 유효한 포인트가 입력되면 디바운스 후 Quote를 조회한다.
+  useEffect(() => {
+    if (isQuoteFormDisabled || selectedOptionId === undefined || !isAmountValid) {
+      quoteReset();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      quoteMutate(
+        {
+          marketId,
+          request: {
+            marketOptionId: selectedOptionId,
+            pointAmount: trimmedAmount,
+          },
+        },
+        {
+          onError: (error) => {
+            if (isApiError(error) && error.errorCode === "MARKET_CLOSED") {
+              queryClient.invalidateQueries({
+                queryKey: marketKeys.detail(marketId),
+              });
+            }
+          },
+        },
+      );
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    trimmedAmount,
+    isAmountValid,
+    selectedOptionId,
+    isQuoteFormDisabled,
+    marketId,
+    quoteMutate,
+    quoteReset,
+    queryClient,
+  ]);
+
   const handlePointAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
     setPointAmount(event.target.value);
-    setValidationMessage(null);
-    quoteMutation.reset();
+    createMutation.reset();
+  };
+
+  const handleQuickAdd = (amount: number) => {
+    setPointAmount((prev) => toDecimal(prev || "0").plus(amount).toString());
     createMutation.reset();
   };
 
   const handleOptionSelect = (optionId: number) => {
     setSelectedOptionId(optionId);
-    setValidationMessage(null);
-    quoteMutation.reset();
     createMutation.reset();
   };
 
-  const handleQuoteSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (isQuoteFormDisabled) return;
-
-    if (selectedOptionId === undefined) {
-      setValidationMessage("선택지를 먼저 선택해 주세요.");
-      return;
-    }
-
-    const trimmedAmount = pointAmount.trim();
-    if (!POINT_AMOUNT_PATTERN.test(trimmedAmount)) {
-      setValidationMessage(
-        "포인트 금액은 0보다 큰 숫자로 입력해 주세요. 소수점은 둘째 자리까지만 허용됩니다.",
-      );
-      return;
-    }
-
-    setValidationMessage(null);
-    quoteMutation.mutate({
-      marketId,
-      request: {
-        marketOptionId: selectedOptionId,
-        pointAmount: trimmedAmount,
-      },
-    });
-  };
-
   const handlePredict = () => {
-    if (!resolvedMemberId || selectedOptionId === undefined || !quoteMutation.data) return;
+    if (!resolvedMemberId || selectedOptionId === undefined || !quoteMutation.data)
+      return;
 
     createMutation.mutate(
       {
@@ -140,13 +168,27 @@ export function CreateMarketPredictionPanel({
             queryKey: predictionKeys.myMarketPrediction(variables.marketId),
           });
           queryClient.invalidateQueries({
-            queryKey: marketKeys.all,
+            queryKey: predictionKeys.myLists(),
+          });
+          queryClient.invalidateQueries({
+            queryKey: marketKeys.detail(variables.marketId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: marketKeys.priceHistoryRoot(variables.marketId),
+          });
+          queryClient.invalidateQueries({
+            queryKey: marketKeys.lists(),
           });
         },
         onError: (error, variables) => {
           if (shouldInvalidateMyPredictionOnCreateError(error)) {
             queryClient.invalidateQueries({
               queryKey: predictionKeys.myMarketPrediction(variables.marketId),
+            });
+          }
+          if (isApiError(error) && error.errorCode === "MARKET_CLOSED") {
+            queryClient.invalidateQueries({
+              queryKey: marketKeys.detail(variables.marketId),
             });
           }
         },
@@ -163,94 +205,132 @@ export function CreateMarketPredictionPanel({
     createMutation.isPending ||
     hasPrediction;
 
-  const quoteErrorMessage = isApiError(quoteMutation.error)
-    ? quoteMutation.error.message
-    : quoteMutation.error instanceof Error
-      ? quoteMutation.error.message
-      : "Quote를 조회하는 중 문제가 발생했습니다.";
+  const quoteErrorMessage =
+    isApiError(quoteMutation.error) &&
+    quoteMutation.error.errorCode === "MARKET_CLOSED"
+      ? "마감 시간이 지나 예측에 참여할 수 없습니다."
+      : isApiError(quoteMutation.error)
+        ? quoteMutation.error.message
+        : quoteMutation.error instanceof Error
+          ? quoteMutation.error.message
+          : "예상 결과를 계산하는 중 문제가 발생했습니다.";
 
   return (
     <Card>
-      <CardHeader className="gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle>예측 참여</CardTitle>
-          <Calculator className="size-5 text-muted-foreground" />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          선택지와 포인트 금액을 입력한 뒤 Quote를 확인하고 예측에 참여합니다.
-        </p>
+      <CardHeader className="gap-1.5">
+        <CardTitle className="font-medium">예측 참여</CardTitle>
+        {!disabledMessage && (
+          <p className="text-sm text-muted-foreground">
+            선택지와 참여 포인트를 입력하면 예상 결과를 바로 확인할 수 있습니다.
+          </p>
+        )}
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-4">
         {!hasMemberId && (
-          <div className="rounded-lg border border-muted bg-muted/30 p-3">
+          <div className="rounded-lg bg-muted/40 p-3">
             <p className="text-sm text-muted-foreground">
               예측에 참여하려면 로그인하거나 로컬 개발용 회원 ID(VITE_DEV_MEMBER_ID)를 설정해 주세요.
             </p>
           </div>
         )}
 
-        <form className="space-y-5" onSubmit={handleQuoteSubmit}>
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">선택지</p>
-            <div className="flex flex-wrap gap-2">
-              {options.map((option) => (
-                <Button
+        {/* 선택지 */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground">선택지</p>
+          <div className="grid grid-cols-2 gap-2">
+            {options.map((option) => {
+              const color = optionColorMap[option.optionId];
+              const selected = selectedOptionId === option.optionId;
+
+              return (
+                <button
                   key={option.optionId}
                   type="button"
-                  size="sm"
-                  variant={
-                    selectedOptionId === option.optionId ? "default" : "outline"
-                  }
                   disabled={isQuoteFormDisabled || createMutation.isPending}
                   onClick={() => handleOptionSelect(option.optionId)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                    selected ? "" : "border-border hover:bg-muted/40",
+                  )}
+                  style={
+                    selected
+                      ? {
+                          borderColor: color?.base,
+                          backgroundColor: `${color?.base}1a`,
+                        }
+                      : undefined
+                  }
                 >
-                  {option.content}
-                </Button>
-              ))}
-            </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        className="size-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: color?.base }}
+                      />
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {option.content}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-sm font-medium tabular-nums text-foreground">
+                      {formatPercent(option.currentPrice)}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="create-prediction-point-amount"
-              className="text-sm font-medium text-foreground"
-            >
-              참여 포인트
-            </label>
-            <Input
-              id="create-prediction-point-amount"
-              inputMode="decimal"
-              placeholder="예: 100.00"
-              value={pointAmount}
-              disabled={
-                isQuoteFormDisabled ||
-                quoteMutation.isPending ||
-                createMutation.isPending
-              }
-              aria-invalid={validationMessage ? true : undefined}
-              onChange={handlePointAmountChange}
-            />
-            {validationMessage && (
-              <p className="text-xs text-destructive">{validationMessage}</p>
-            )}
-            {disabledMessage && (
-              <p className="text-xs text-muted-foreground">{disabledMessage}</p>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            variant="outline"
-            disabled={isQuoteFormDisabled || quoteMutation.isPending || createMutation.isPending}
+        {/* 참여 포인트 */}
+        <div className="space-y-2">
+          <label
+            htmlFor="create-prediction-point-amount"
+            className="text-sm font-medium text-foreground"
           >
-            {quoteMutation.isPending ? "조회 중" : "Quote 조회"}
-          </Button>
-        </form>
+            참여 포인트
+          </label>
+          <Input
+            id="create-prediction-point-amount"
+            inputMode="decimal"
+            placeholder="예: 100"
+            value={pointAmount}
+            disabled={isQuoteFormDisabled || createMutation.isPending}
+            aria-invalid={showAmountError ? true : undefined}
+            onChange={handlePointAmountChange}
+          />
+          <div className="grid grid-cols-3 gap-2">
+            {QUICK_ADD_AMOUNTS.map((amount) => (
+              <Button
+                key={amount}
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isQuoteFormDisabled || createMutation.isPending}
+                onClick={() => handleQuickAdd(amount)}
+              >
+                +{amount}
+              </Button>
+            ))}
+          </div>
+          {showAmountError && (
+            <p className="text-xs text-destructive">
+              0보다 큰 숫자로 입력해 주세요. 소수점은 둘째 자리까지 가능합니다.
+            </p>
+          )}
+          {disabledMessage && (
+            <p className="text-xs text-muted-foreground">{disabledMessage}</p>
+          )}
+        </div>
+
+        {/* 예상 결과 미리보기 */}
+        {quoteMutation.isPending && (
+          <p className="text-xs text-muted-foreground">예상 결과 계산 중…</p>
+        )}
 
         {quoteMutation.isError && (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-            <p className="text-sm font-semibold text-destructive">
-              Quote를 불러오지 못했습니다
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+            <p className="text-sm font-medium text-destructive">
+              예상 결과를 불러오지 못했습니다
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               {quoteErrorMessage}
@@ -258,17 +338,17 @@ export function CreateMarketPredictionPanel({
           </div>
         )}
 
-        {quoteMutation.data && (
-          <QuoteResult data={quoteMutation.data} />
+        {quoteMutation.data && !quoteMutation.isPending && (
+          <QuotePreview data={quoteMutation.data} />
         )}
 
         {hasPrediction && (
-          <div className="rounded-lg border border-muted bg-muted/30 p-4">
-            <p className="text-sm font-semibold text-foreground">
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-sm font-medium text-foreground">
               이미 이 마켓에 참여했습니다.
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              내 예측 상태 카드에서 결과를 확인하세요.
+              아래 "내 예측"에서 결과를 확인하세요.
             </p>
           </div>
         )}
@@ -279,13 +359,15 @@ export function CreateMarketPredictionPanel({
           </p>
         )}
 
-        {!hasPrediction && quoteMutation.data && (
+        {/* CTA */}
+        {!hasPrediction && (
           <Button
             type="button"
+            className="w-full bg-green-600 font-medium text-white hover:bg-green-700"
             disabled={isPredictButtonDisabled}
             onClick={handlePredict}
           >
-            {createMutation.isPending ? "참여 중..." : "예측 참여하기"}
+            {createMutation.isPending ? "참여 중…" : "예측 참여하기"}
           </Button>
         )}
 
@@ -301,36 +383,42 @@ export function CreateMarketPredictionPanel({
   );
 }
 
-type QuoteResultProps = {
+type QuotePreviewProps = {
   data: MarketPredictionQuoteResponse;
 };
 
-function QuoteResult({ data }: QuoteResultProps) {
+function QuotePreview({ data }: QuotePreviewProps) {
+  const estimatedContractQuantity = formatMarketPrice(
+    data.estimatedContractQuantity,
+    2,
+  );
+
   return (
-    <div className="rounded-lg border border-border bg-muted/20 p-4">
-      <div className="grid gap-3 text-sm sm:grid-cols-2">
-        <QuoteRow label="요청 포인트" value={formatPointAmount(data.pointAmount)} />
-        <QuoteRow label="현재 가격" value={formatPercent(data.currentPrice)} />
-        <QuoteRow
-          label="예상 계약 수량"
-          value={formatMarketPrice(data.estimatedContractQuantity)}
-        />
-        <QuoteRow
-          label="예상 참여 후 가격"
-          value={formatPercent(data.estimatedAfterPrice)}
-        />
-        <QuoteRow
-          label="가격 영향도"
-          value={formatPercentPoint(data.priceImpactRate)}
-        />
-        <QuoteRow
-          label="선택지 유효 풀"
-          value={`${formatPointAmount(data.selectedOptionEffectivePoolBefore)} → ${formatPointAmount(data.selectedOptionEffectivePoolAfter)}`}
-        />
+    <div className="space-y-2 rounded-lg bg-muted/40 p-3">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{MARKET_LABELS.predictionRate}</span>
+        <span className="font-medium tabular-nums text-foreground">
+          {formatPercent(data.currentPrice)}
+        </span>
       </div>
-      <p className="mt-4 rounded-md bg-background p-3 text-xs text-muted-foreground">
-        {data.notice || DEFAULT_NOTICE}
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">
+          예상 {MARKET_LABELS.winShare}
+        </span>
+        <span className="font-medium tabular-nums text-foreground">
+          {estimatedContractQuantity === "-"
+            ? estimatedContractQuantity
+            : `${estimatedContractQuantity}계약`}
+        </span>
+      </div>
+      <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
+        {MARKET_CAPTIONS.winShare}
       </p>
+      {data.notice ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {data.notice}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -344,12 +432,12 @@ function PredictionSuccessMessage({ data }: PredictionSuccessMessageProps) {
 
   if (status === "CONFIRMED") {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
-        <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+        <p className="text-sm font-medium text-green-800">
           예측 참여가 완료되었습니다.
         </p>
-        <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-          내 예측 상태 카드에서 결과를 확인하세요.
+        <p className="mt-1 text-sm text-green-700">
+          아래 "내 예측"에서 결과를 확인하세요.
         </p>
       </div>
     );
@@ -357,12 +445,12 @@ function PredictionSuccessMessage({ data }: PredictionSuccessMessageProps) {
 
   if (status === "POINT_PENDING") {
     return (
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
-        <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm font-medium text-blue-800">
           예측 참여 처리 중입니다.
         </p>
-        <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-          잠시 후 내 예측 상태 카드에서 결과가 반영됩니다.
+        <p className="mt-1 text-sm text-blue-700">
+          잠시 후 "내 예측"에 결과가 반영됩니다.
         </p>
       </div>
     );
@@ -370,12 +458,12 @@ function PredictionSuccessMessage({ data }: PredictionSuccessMessageProps) {
 
   if (status === "POINT_UNKNOWN") {
     return (
-      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900 dark:bg-yellow-950">
-        <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+        <p className="text-sm font-medium text-yellow-800">
           예측 참여 처리 상태를 확인 중입니다.
         </p>
-        <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-          잠시 후 결과가 반영될 수 있습니다. 내 예측 상태 카드를 확인해 주세요.
+        <p className="mt-1 text-sm text-yellow-700">
+          잠시 후 결과가 반영될 수 있습니다. "내 예측"을 확인해 주세요.
         </p>
       </div>
     );
@@ -384,7 +472,7 @@ function PredictionSuccessMessage({ data }: PredictionSuccessMessageProps) {
   if (status === "FAILED") {
     return (
       <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-        <p className="text-sm font-semibold text-destructive">
+        <p className="text-sm font-medium text-destructive">
           예측 참여에 실패했습니다.
         </p>
       </div>
@@ -397,7 +485,7 @@ function PredictionSuccessMessage({ data }: PredictionSuccessMessageProps) {
 const PREDICTION_ERROR_MESSAGES: Record<string, string> = {
   MARKET_NOT_FOUND: "마켓을 찾을 수 없습니다.",
   MARKET_NOT_ACTIVE: "현재 참여할 수 없는 마켓입니다.",
-  MARKET_CLOSED: "이미 마감된 마켓입니다.",
+  MARKET_CLOSED: "마감 시간이 지나 예측에 참여할 수 없습니다.",
   MARKET_ALREADY_PREDICTED: "이미 이 마켓에 참여했습니다.",
   MARKET_OPTION_NOT_FOUND: "선택지를 찾을 수 없습니다.",
   MARKET_INVALID_BET_AMOUNT: "예측 참여 금액을 확인해 주세요.",
@@ -457,44 +545,19 @@ function PredictionErrorMessage({ error }: PredictionErrorMessageProps) {
 
   if (isUncertain) {
     return (
-      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900 dark:bg-yellow-950">
-        <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
-          처리 상태 확인 중
-        </p>
-        <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-          {message}
-        </p>
+      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+        <p className="text-sm font-medium text-yellow-800">처리 상태 확인 중</p>
+        <p className="mt-1 text-sm text-yellow-700">{message}</p>
       </div>
     );
   }
 
   return (
     <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-      <p className="text-sm font-semibold text-destructive">
-        예측 참여 실패
-      </p>
+      <p className="text-sm font-medium text-destructive">예측 참여 실패</p>
       <p className="mt-1 text-sm text-muted-foreground">{message}</p>
     </div>
   );
-}
-
-type QuoteRowProps = {
-  label: string;
-  value: string;
-};
-
-function QuoteRow({ label, value }: QuoteRowProps) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-semibold text-foreground">{value}</p>
-    </div>
-  );
-}
-
-function formatPercentPoint(value: string | null | undefined): string {
-  const formatted = formatMarketPrice(value);
-  return formatted === "-" ? "-" : `${formatted}%`;
 }
 
 function shouldInvalidateMyPredictionOnCreateError(error: unknown): boolean {

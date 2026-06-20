@@ -1,41 +1,26 @@
 import { Link } from "react-router-dom";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
+import { isApiError } from "@/shared/api/apiError";
+import { useMarketListQuery } from "@/entities/market/model/useMarketListQuery";
+import type { MarketListParams } from "@/entities/market/model/market.types";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
-import { buttonVariants } from "@/shared/ui/button";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { ErrorState } from "@/shared/ui/error-state";
 import { PageContainer } from "@/shared/ui/page-container";
 import { SectionTitle } from "@/shared/ui/section-title";
+import { Skeleton } from "@/shared/ui/skeleton";
 import { cn } from "@/shared/lib/utils";
 
-// Mock data for display
-const popularMarkets = [
-  {
-    id: "m-1",
-    title: "이번 주 대구 수성구 아파트 매매가 상승률은 0.3% 이상일까요?",
-    category: "대구 · 매매가",
-    yesChance: 58,
-    noChance: 42,
-    volume: "12,450P",
-    endTime: "2026-06-15",
-  },
-  {
-    id: "m-2",
-    title: "서울 강남구 전세가 지수는 다음 주 상승할까요?",
-    category: "서울 · 전세가",
-    yesChance: 71,
-    noChance: 29,
-    volume: "28,900P",
-    endTime: "2026-06-18",
-  },
-  {
-    id: "m-3",
-    title: "부산 해운대구 거래량은 전월 대비 증가할까요?",
-    category: "부산 · 거래량",
-    yesChance: 45,
-    noChance: 55,
-    volume: "8,200P",
-    endTime: "2026-06-20",
-  },
-];
+import { PopularMarketCard } from "./ui/PopularMarketCard";
+
+// 인기 마켓: 진행 중(ACTIVE) + 실제 참여 볼륨 내림차순(popular), 메인 노출 6개.
+const POPULAR_MARKET_PARAMS: MarketListParams = {
+  displayStatus: "ACTIVE",
+  sort: "popular",
+  page: 0,
+  size: 6,
+};
 
 const trendingBattles = [
   {
@@ -65,12 +50,21 @@ const trendingBattles = [
 ];
 
 export function HomePage() {
+  const { data, error, isError, isLoading, refetch } =
+    useMarketListQuery(POPULAR_MARKET_PARAMS);
+
+  const popularErrorMessage = isApiError(error)
+    ? error.message
+    : error instanceof Error
+      ? error.message
+      : "인기 마켓을 불러오는 중 문제가 발생했습니다.";
+
   return (
     <PageContainer>
       {/* Hero Section */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white shadow-md">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0c_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0c_1px,transparent_1px)] bg-[size:24px_24px]" />
-        <div className="relative px-6 py-12 sm:px-12 sm:py-16 md:py-20 lg:px-16 max-w-3xl space-y-6">
+        <div className="relative mx-auto px-6 py-12 sm:px-12 sm:py-16 md:py-20 lg:px-16 max-w-3xl space-y-6 text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200 backdrop-blur-md">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             실시간 부동산 이슈 분석 플랫폼
@@ -81,7 +75,7 @@ export function HomePage() {
           </h1>
           <p className="text-sm sm:text-base text-emerald-100/90 leading-relaxed font-light">
             토동산은 지역 부동산 이슈를 예측 시장과 커뮤니티 투표로 확인하는 서비스입니다.
-            포인트를 베팅하여 예측의 정확도를 시험하고 다른 사용자와의 의견을 겨뤄보세요.
+            포인트로 예측에 참여해 정확도를 시험하고 다른 사용자와 의견을 겨뤄보세요.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Link
@@ -111,7 +105,7 @@ export function HomePage() {
         <div className="flex items-center justify-between">
           <SectionTitle
             title="인기 예측 마켓"
-            description="현재 가장 활발하게 베팅이 이루어지고 있는 이슈들입니다."
+            description="현재 가장 활발하게 참여가 이루어지고 있는 이슈들입니다."
           />
           <Link
             to={ROUTE_PATH.MARKETS}
@@ -121,38 +115,29 @@ export function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {popularMarkets.map((market) => (
-            <Card key={market.id} className="rounded-2xl border-slate-200 bg-white hover:shadow-md transition-shadow flex flex-col justify-between">
-              <CardHeader className="space-y-1.5 pb-4">
-                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 self-start px-2 py-0.5 rounded">
-                  {market.category}
-                </span>
-                <CardTitle className="text-sm font-semibold leading-snug text-slate-900 group-hover:text-emerald-700 line-clamp-2">
-                  {market.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                {/* Bet Odds buttons */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button className="flex flex-col items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50/40 p-2 hover:bg-emerald-50 transition-colors">
-                    <span className="text-[10px] font-medium text-slate-500">그렇다 (Yes)</span>
-                    <span className="text-sm font-bold text-emerald-700">{market.yesChance}%</span>
-                  </button>
-                  <button className="flex flex-col items-center justify-center rounded-xl border border-slate-100 bg-slate-50/50 p-2 hover:bg-slate-50 transition-colors">
-                    <span className="text-[10px] font-medium text-slate-500">아니다 (No)</span>
-                    <span className="text-sm font-bold text-slate-700">{market.noChance}%</span>
-                  </button>
-                </div>
-                {/* Stats */}
-                <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-100 pt-3">
-                  <span>거래량: <strong className="text-slate-700 font-semibold">{market.volume}</strong></span>
-                  <span>마감: {market.endTime}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {isLoading && <PopularMarketsSkeleton />}
+
+        {isError && (
+          <ErrorState
+            message={popularErrorMessage}
+            action={<Button onClick={() => refetch()}>다시 시도</Button>}
+          />
+        )}
+
+        {!isLoading && !isError && data && data.content.length === 0 && (
+          <EmptyState
+            title="진행 중인 인기 마켓이 없습니다"
+            description="새로운 예측 마켓이 열리면 이곳에 표시됩니다."
+          />
+        )}
+
+        {!isLoading && !isError && data && data.content.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-3">
+            {data.content.map((market) => (
+              <PopularMarketCard key={market.marketId} market={market} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Trending Battles Section */}
@@ -202,5 +187,30 @@ export function HomePage() {
         </div>
       </section>
     </PageContainer>
+  );
+}
+
+function PopularMarketsSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="rounded-xl bg-card p-4 ring-1 ring-foreground/10"
+        >
+          <Skeleton className="ml-auto h-4 w-16" />
+          <Skeleton className="mt-3 h-4 w-11/12" />
+          <Skeleton className="mt-2 h-4 w-8/12" />
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
+          <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

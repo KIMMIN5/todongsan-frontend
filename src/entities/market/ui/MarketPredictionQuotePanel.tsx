@@ -14,15 +14,16 @@ import { Input } from "@/shared/ui/input";
 
 import { useMarketPredictionQuoteMutation } from "../model/useMarketPredictionQuoteMutation";
 import type {
+  MarketDisplayStatus,
   MarketOption,
   MarketPredictionQuoteResponse,
-  MarketStatus,
 } from "../model/market.types";
 
 type MarketPredictionQuotePanelProps = {
   marketId: number;
   options: MarketOption[];
-  marketStatus: MarketStatus;
+  canPredict: boolean;
+  displayStatus: MarketDisplayStatus;
 };
 
 const POINT_AMOUNT_PATTERN = /^(?!0+(?:\.0{1,2})?$)\d+(?:\.\d{1,2})?$/;
@@ -32,7 +33,8 @@ const DEFAULT_NOTICE =
 export function MarketPredictionQuotePanel({
   marketId,
   options,
-  marketStatus,
+  canPredict,
+  displayStatus,
 }: MarketPredictionQuotePanelProps) {
   const [selectedOptionId, setSelectedOptionId] = useState<number | undefined>(
     options[0]?.optionId,
@@ -43,13 +45,14 @@ export function MarketPredictionQuotePanel({
   );
   const quoteMutation = useMarketPredictionQuoteMutation();
 
-  const isQuoteDisabled = marketStatus !== "ACTIVE" || options.length === 0;
-  const disabledMessage =
-    marketStatus !== "ACTIVE"
-      ? "ACTIVE 상태의 마켓에서만 Quote를 조회할 수 있습니다."
-      : options.length === 0
-      ? "선택지가 없어 Quote를 조회할 수 없습니다."
-      : null;
+  const isQuoteDisabled = !canPredict || options.length === 0;
+  const disabledMessage = !canPredict
+    ? displayStatus === "CLOSED_BY_TIME"
+      ? "마감 시간이 지나 예측에 참여할 수 없습니다."
+      : "현재 예측 참여가 불가능한 상태입니다."
+    : options.length === 0
+    ? "선택지가 없어 Quote를 조회할 수 없습니다."
+    : null;
 
   const handlePointAmountChange = (
     event: ChangeEvent<HTMLInputElement>,
