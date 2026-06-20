@@ -11,6 +11,10 @@ import { MarketListPage } from '@/pages/market/MarketListPage';
 import { MyPage } from '@/pages/my/MyPage';
 import ProfileEditPage from '@/pages/my/ProfileEditPage';
 import PointHistoryPage from '@/pages/my/PointHistoryPage';
+import VisitCertificationPage from '@/pages/my/VisitCertificationPage';
+import MarketReportPage from '@/pages/market/MarketReportPage';
+import ReputationDetailPage from '@/pages/reputation/ReputationDetailPage';
+import AdminBattleReportPage from '@/pages/admin/battle/AdminBattleReportPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
@@ -68,7 +72,7 @@ export const router = createBrowserRouter([
         path: 'markets/:marketId/report',
         element: (
           <ProtectedRoute>
-            <div>MarketReportPage</div>
+            <MarketReportPage />
           </ProtectedRoute>
         ),
       },
@@ -102,7 +106,7 @@ export const router = createBrowserRouter([
         path: 'my/visit-certifications',
         element: (
           <ProtectedRoute>
-            <div>VisitCertificationPage</div>
+            <VisitCertificationPage />
           </ProtectedRoute>
         ),
       },
@@ -110,7 +114,7 @@ export const router = createBrowserRouter([
       // Reputation Routes
       {
         path: 'reputations/:memberId',
-        element: <div>ReputationDetailPage</div>,
+        element: <ReputationDetailPage />,
       },
 
       // Admin Routes
@@ -150,7 +154,7 @@ export const router = createBrowserRouter([
         path: 'admin/battles/:battleId/report',
         element: (
           <AdminRoute>
-            <div>AdminBattleReportPage</div>
+            <AdminBattleReportPage />
           </AdminRoute>
         ),
       },

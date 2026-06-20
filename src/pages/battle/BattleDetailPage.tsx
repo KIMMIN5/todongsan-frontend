@@ -10,6 +10,7 @@ import { BattleCommentSection } from "@/entities/battle/ui/BattleCommentSection"
 import { BattleStatusBadge } from "@/entities/battle/ui/BattleStatusBadge";
 import { BattleVotePanel } from "@/entities/battle/ui/BattleVotePanel";
 import { pointKeys } from "@/entities/point/model/point.keys";
+import { BattleReportSection } from "@/features/request-battle-report/ui/BattleReportSection";
 import { isApiError } from "@/shared/api/apiError";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { formatDateTime } from "@/shared/lib/formatDate";
@@ -236,6 +237,13 @@ export default function BattleDetailPage() {
           />
         </CardContent>
       </Card>
+
+      {/* AI 분석 리포트 (종료된 배틀에서만 표시) */}
+      <BattleReportSection
+        battleId={battle.battleId}
+        battleStatus={battle.status}
+        isAuthenticated={isAuthenticated}
+      />
     </PageContainer>
   );
 }
