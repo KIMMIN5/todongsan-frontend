@@ -73,6 +73,36 @@ export type MarketDetail = MarketSummary & {
   resultAnnounceAt?: string;
 };
 
+export type MarketAnswerType = "YES_NO" | "MULTIPLE_CHOICE" | "NUMERIC_RANGE";
+
+export type AdminMarketOption = MarketOption & {
+  rangeMin?: string;
+  rangeMax?: string;
+  minInclusive?: boolean;
+  maxInclusive?: boolean;
+  totalContractQuantity?: string;
+};
+
+/** 정산/환불 요약. 백엔드 고정 스키마가 확정되지 않아 키를 그대로 노출한다. */
+export type MarketSummaryRecord = Record<string, string | number | boolean | null>;
+
+/** GET /api/v1/admin/markets/{marketId} 응답. */
+export type AdminMarketDetail = Omit<MarketDetail, "options"> & {
+  answerType: MarketAnswerType;
+  options: AdminMarketOption[];
+  settlementSummary?: MarketSummaryRecord | null;
+  refundSummary?: MarketSummaryRecord | null;
+  /** 처리 대기 중인(POINT_PENDING/POINT_UNKNOWN) 예측 건수. 응답에 없으면 알 수 없음(undefined)으로 취급. */
+  pendingPredictionCount?: number;
+};
+
+/** PATCH /api/v1/admin/markets/{marketId}/result 요청. */
+export type AdminMarketResultRequest = {
+  resultOptionId?: number;
+  resultValue?: string;
+  resultText?: string;
+};
+
 export type MarketPriceHistoryResponse = {
   content: MarketPriceHistoryItem[];
   page: number;
@@ -98,6 +128,65 @@ export type MarketPriceHistoryItem = {
   contractQuantityBefore: string;
   contractQuantityAfter: string;
   createdAt: string;
+};
+
+/** GET /api/v1/admin/markets/status-counts 응답. 관리자 마켓 목록 탭 카운트. */
+export type AdminMarketStatusCounts = {
+  total: number;
+  pending: number;
+  active: number;
+  closedByTime: number;
+  closed: number;
+  settlementInProgress: number;
+  settled: number;
+  voided: number;
+  problemMarketCount: number;
+};
+
+export type AdminMarketProblemType =
+  | "PREDICTION_RECONCILE"
+  | "SETTLEMENT"
+  | "REFUND"
+  | "REPUTATION";
+
+export type AdminMarketProblemStatus =
+  | "FAILED"
+  | "UNKNOWN"
+  | "PENDING_STALE"
+  | "NEEDS_CHECK";
+
+export type AdminMarketProblemFilterType = "ALL" | AdminMarketProblemType;
+
+/** GET /api/v1/admin/markets/problem-markets 쿼리 파라미터. */
+export type AdminMarketProblemListParams = {
+  page?: number;
+  size?: number;
+  type?: AdminMarketProblemFilterType;
+};
+
+export type AdminMarketProblemItem = {
+  marketId: number;
+  title: string;
+  marketStatus: MarketStatus;
+  problemType: AdminMarketProblemType;
+  problemStatus: AdminMarketProblemStatus;
+  failedCount: number;
+  unknownCount: number;
+  pendingStaleCount: number;
+  lastErrorCode?: string | null;
+  lastErrorMessage?: string | null;
+  lastAttemptAt?: string | null;
+  autoRecoverable: boolean;
+  manualCheckRequired: boolean;
+};
+
+export type AdminMarketProblemListResponse = {
+  content: AdminMarketProblemItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
 };
 
 export type MarketPredictionQuoteResponse = {
