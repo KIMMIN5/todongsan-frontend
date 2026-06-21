@@ -49,6 +49,7 @@ export interface KakaoOAuthResponse {
   refreshToken: string;
   memberId: number;
   nickname: string;
+  role: UserRole;
   isNewMember: boolean;
 }
 

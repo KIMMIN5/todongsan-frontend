@@ -12,6 +12,15 @@ import { MyPage } from '@/pages/my/MyPage';
 import ProfileEditPage from '@/pages/my/ProfileEditPage';
 import PointHistoryPage from '@/pages/my/PointHistoryPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
+import AdminBattleListPage from '@/pages/admin/battle/AdminBattleListPage';
+import AdminBattleDetailPage from '@/pages/admin/battle/AdminBattleDetailPage';
+import AdminBattleAnalysisPage from '@/pages/admin/battle/AdminBattleAnalysisPage';
+import AdminBattleReportPage from '@/pages/admin/battle/AdminBattleReportPage';
+import AdminMarketListPage from '@/pages/admin/market/AdminMarketListPage';
+import AdminMarketCreatePage from '@/pages/admin/market/AdminMarketCreatePage';
+import AdminMarketDetailPage from '@/pages/admin/market/AdminMarketDetailPage';
+import AdminMarketResultPage from '@/pages/admin/market/AdminMarketResultPage';
+import AdminMarketProblemListPage from '@/pages/admin/market/AdminMarketProblemListPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 // Route Guards
@@ -126,7 +135,7 @@ export const router = createBrowserRouter([
         path: 'admin/battles',
         element: (
           <AdminRoute>
-            <div>AdminBattleListPage</div>
+            <AdminBattleListPage />
           </AdminRoute>
         ),
       },
@@ -134,7 +143,7 @@ export const router = createBrowserRouter([
         path: 'admin/battles/:battleId',
         element: (
           <AdminRoute>
-            <div>AdminBattleDetailPage</div>
+            <AdminBattleDetailPage />
           </AdminRoute>
         ),
       },
@@ -142,7 +151,7 @@ export const router = createBrowserRouter([
         path: 'admin/battles/:battleId/analysis',
         element: (
           <AdminRoute>
-            <div>AdminBattleAnalysisPage</div>
+            <AdminBattleAnalysisPage />
           </AdminRoute>
         ),
       },
@@ -150,7 +159,7 @@ export const router = createBrowserRouter([
         path: 'admin/battles/:battleId/report',
         element: (
           <AdminRoute>
-            <div>AdminBattleReportPage</div>
+            <AdminBattleReportPage />
           </AdminRoute>
         ),
       },
@@ -158,7 +167,7 @@ export const router = createBrowserRouter([
         path: 'admin/markets',
         element: (
           <AdminRoute>
-            <div>AdminMarketListPage</div>
+            <AdminMarketListPage />
           </AdminRoute>
         ),
       },
@@ -166,7 +175,15 @@ export const router = createBrowserRouter([
         path: 'admin/markets/new',
         element: (
           <AdminRoute>
-            <div>AdminMarketCreatePage</div>
+            <AdminMarketCreatePage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: 'admin/markets/problems',
+        element: (
+          <AdminRoute>
+            <AdminMarketProblemListPage />
           </AdminRoute>
         ),
       },
@@ -174,7 +191,7 @@ export const router = createBrowserRouter([
         path: 'admin/markets/:marketId',
         element: (
           <AdminRoute>
-            <div>AdminMarketDetailPage</div>
+            <AdminMarketDetailPage />
           </AdminRoute>
         ),
       },
@@ -182,7 +199,7 @@ export const router = createBrowserRouter([
         path: 'admin/markets/:marketId/result',
         element: (
           <AdminRoute>
-            <div>AdminMarketResultPage</div>
+            <AdminMarketResultPage />
           </AdminRoute>
         ),
       },
