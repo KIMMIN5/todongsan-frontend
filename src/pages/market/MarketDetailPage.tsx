@@ -135,10 +135,11 @@ export default function MarketDetailPage() {
                     <p className="mb-4 text-sm text-muted-foreground">
                       AI가 이 마켓의 결과를 분석한 리포트를 확인하세요.
                     </p>
-                    <Button asChild className="w-full">
-                      <Link to={`/markets/${data.marketId}/report`}>
-                        AI 리포트 보기
-                      </Link>
+                    <Button
+                      className="w-full"
+                      render={<Link to={`/markets/${data.marketId}/report`} />}
+                    >
+                      AI 리포트 보기
                     </Button>
                   </CardContent>
                 </Card>
