@@ -22,15 +22,18 @@ export function MyPage() {
         <MyProfileCard />
 
         <div className="md:col-span-2 space-y-6">
-          <MyPointSummaryCard />
-          <MyActivityPanel />
+          <div className="grid gap-6 sm:grid-cols-2">
+            <MyPointSummaryCard />
 
-          {reputationQuery.isPending && (
-            <Skeleton className="h-48 w-full rounded-2xl" />
-          )}
-          {!reputationQuery.isPending && reputationQuery.data && (
-            <ReputationSummaryCard reputation={reputationQuery.data} />
-          )}
+            {reputationQuery.isPending && (
+              <Skeleton className="h-full min-h-36 w-full rounded-2xl" />
+            )}
+            {!reputationQuery.isPending && reputationQuery.data && (
+              <ReputationSummaryCard reputation={reputationQuery.data} />
+            )}
+          </div>
+
+          <MyActivityPanel />
         </div>
       </div>
     </PageContainer>

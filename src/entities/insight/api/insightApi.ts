@@ -6,12 +6,40 @@ import type {
   InsightReportStatusInfo,
 } from "../model/insight.types";
 
+// Claude 출력이 "title: ...\n\nsummary: ...\n\ncontent: |\n  ..." 형식으로
+// summary 필드에 통째로 들어오는 경우를 파싱
+function parseClaudeOutput(raw: string): { title?: string; summary?: string; content?: string } {
+  if (!raw.trimStart().startsWith('title:')) return {};
+
+  const titleMatch = raw.match(/^title:\s*(.+?)(?:\n|$)/);
+  const summaryMatch = raw.match(/(?:^|\n)summary:\s*([\s\S]+?)(?:\n\ncontent:)/);
+  const contentMatch = raw.match(/(?:^|\n)content:\s*\|?\n?([\s\S]+)$/);
+
+  return {
+    title: titleMatch?.[1]?.trim(),
+    summary: summaryMatch?.[1]?.trim(),
+    content: contentMatch?.[1]
+      ?.split('\n')
+      .map(line => line.replace(/^ {2}/, ''))
+      .join('\n')
+      .trim(),
+  };
+}
+
 // 백엔드가 reportContent 필드로 반환하는 것을 프론트 타입의 content로 정규화
 function normalizeReport(raw: InsightReport & { reportContent?: string }): InsightReport {
-  return {
-    ...raw,
-    content: raw.content ?? raw.reportContent,
-  };
+  let { title, summary } = raw;
+  let content = raw.content ?? raw.reportContent ?? null;
+
+  // Claude 전체 출력이 summary 필드에 들어온 경우 파싱
+  if (!content && summary?.trimStart().startsWith('title:')) {
+    const parsed = parseClaudeOutput(summary);
+    title = title ?? parsed.title;
+    summary = parsed.summary;
+    content = parsed.content ?? null;
+  }
+
+  return { ...raw, title, summary, content };
 }
 
 export async function createMarketInsightReport(
