@@ -9,7 +9,7 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Button } from "@/shared/ui/button";
 import { usePointHistoryQuery } from "@/entities/point/model/point.queries";
-import type { PointHistoryFilterType, PointTransactionType } from "@/entities/point/model/point.types";
+import type { PointHistoryFilterType } from "@/entities/point/model/point.types";
 import { formatDateTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 
@@ -22,18 +22,6 @@ const FILTER_TABS: { value: PointHistoryFilterType | "ALL"; label: string }[] = 
   { value: "SETTLE", label: "정산" },
   { value: "REFUND", label: "환불" },
 ];
-
-const TRANSACTION_TYPE_LABEL: Record<PointTransactionType, string> = {
-  EARN_VOTE: "투표 참여 보상",
-  EARN_COMMENT: "댓글 작성 보상",
-  EARN_VISIT_CERT: "방문 인증 보상",
-  SPEND_MARKET: "마켓 예측 참여",
-  SPEND_INSIGHT: "AI 리포트 생성",
-  SETTLE_MARKET: "마켓 정산 수익",
-  REFUND_MARKET: "마켓 환불",
-  REFUND_INSIGHT: "AI 리포트 환불",
-  ADMIN_ADJUST: "관리자 조정",
-};
 
 export default function PointHistoryPage() {
   const [filter, setFilter] = useState<PointHistoryFilterType | "ALL">("ALL");
@@ -84,7 +72,6 @@ export default function PointHistoryPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>일시</TableHead>
-                    <TableHead>유형</TableHead>
                     <TableHead>사유</TableHead>
                     <TableHead className="text-right">금액</TableHead>
                     <TableHead className="text-right">거래 후 잔액</TableHead>
@@ -96,7 +83,6 @@ export default function PointHistoryPage() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="text-xs text-slate-500">{formatDateTime(item.createdAt)}</TableCell>
-                        <TableCell className="text-xs font-medium">{TRANSACTION_TYPE_LABEL[item.type] ?? item.type}</TableCell>
                         <TableCell className="text-xs text-slate-500">{item.reason ?? "-"}</TableCell>
                         <TableCell
                           className={`text-right text-xs font-bold ${
@@ -131,7 +117,7 @@ export default function PointHistoryPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={data.last}
+                    disabled={data.totalPages === 0 || page + 1 >= data.totalPages}
                     onClick={() => setPage((prev) => prev + 1)}
                   >
                     다음
