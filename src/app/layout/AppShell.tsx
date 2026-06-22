@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
-import { Button, buttonVariants } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAuth } from "@/entities/auth/model/useAuth";
 import { logout as logoutFromServer } from "@/entities/auth/api/authApi";
+import { LoginModal } from "@/features/login-modal/ui/LoginModal";
 
 const navItems = [
   { label: "홈", to: ROUTE_PATH.HOME },
@@ -15,6 +17,7 @@ const navItems = [
 export function AppShell() {
   const navigate = useNavigate();
   const { isAuthenticated, nickname, logout } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -82,18 +85,14 @@ export function AppShell() {
                 </Button>
               </>
             ) : (
-              <NavLink
-                to={ROUTE_PATH.LOGIN}
-                className={({ isActive }) =>
-                  cn(
-                    buttonVariants({ variant: "ghost", size: "sm" }),
-                    "text-xs font-semibold",
-                    isActive && "bg-slate-100 text-slate-900"
-                  )
-                }
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs font-semibold"
+                onClick={() => setIsLoginModalOpen(true)}
               >
                 로그인
-              </NavLink>
+              </Button>
             )}
           </div>
         </div>
@@ -116,6 +115,8 @@ export function AppShell() {
           </div>
         </div>
       </footer>
+
+      <LoginModal open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen} />
     </div>
   );
 }
