@@ -32,6 +32,8 @@ export const adminBattleKeys = {
   all: ["admin", "battles"] as const,
   list: (params: BattleListParams) =>
     ["admin", "battles", "list", params] as const,
+  pendingList: (params: { page?: number; size?: number }) =>
+    ["admin", "battles", "pending", params] as const,
   detail: (battleId: number) => ["admin", "battles", "detail", battleId] as const,
   analysis: (battleId: number) =>
     ["admin", "battles", "analysis", battleId] as const,

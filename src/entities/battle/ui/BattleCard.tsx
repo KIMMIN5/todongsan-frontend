@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Users } from "lucide-react";
+import { MessageSquare, Users } from "lucide-react";
 
 import { formatDateTime } from "@/shared/lib/formatDate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -49,10 +49,16 @@ export function BattleCard({ battle }: BattleCardProps) {
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <Users className="size-3.5" />
-            {battle.voteCount.toLocaleString()}명 참여
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1">
+              <Users className="size-3.5" />
+              {battle.voteCount.toLocaleString()}명 참여
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <MessageSquare className="size-3.5" />
+              {battle.commentCount.toLocaleString()}
+            </span>
+          </div>
           <span>마감 {formatDateTime(battle.endAt)}</span>
         </div>
       </CardContent>

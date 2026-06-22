@@ -1,38 +1,38 @@
-import { createBrowserRouter } from 'react-router-dom';
-import { AppShell } from '@/app/layout/AppShell';
+import { createBrowserRouter } from "react-router-dom";
+import { AppShell } from "@/app/layout/AppShell";
 
 // Pages
-import { HomePage } from '@/pages/home/HomePage';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { KakaoCallbackPage } from '@/pages/auth/KakaoCallbackPage';
-import { BattleListPage } from '@/pages/battle/BattleListPage';
-import { BattleCreatePage } from '@/pages/battle/BattleCreatePage';
-import { MarketListPage } from '@/pages/market/MarketListPage';
-import { MyPage } from '@/pages/my/MyPage';
-import ProfileEditPage from '@/pages/my/ProfileEditPage';
-import PointHistoryPage from '@/pages/my/PointHistoryPage';
-import VisitCertificationPage from '@/pages/my/VisitCertificationPage';
-import MarketReportPage from '@/pages/market/MarketReportPage';
-import ReputationDetailPage from '@/pages/reputation/ReputationDetailPage';
-import AdminBattleReportPage from '@/pages/admin/battle/AdminBattleReportPage';
-import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
-import AdminBattleListPage from '@/pages/admin/battle/AdminBattleListPage';
-import AdminBattleDetailPage from '@/pages/admin/battle/AdminBattleDetailPage';
-import AdminBattleAnalysisPage from '@/pages/admin/battle/AdminBattleAnalysisPage';
-import AdminMarketListPage from '@/pages/admin/market/AdminMarketListPage';
-import AdminMarketCreatePage from '@/pages/admin/market/AdminMarketCreatePage';
-import AdminMarketDetailPage from '@/pages/admin/market/AdminMarketDetailPage';
-import AdminMarketResultPage from '@/pages/admin/market/AdminMarketResultPage';
-import AdminMarketProblemListPage from '@/pages/admin/market/AdminMarketProblemListPage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
+import { HomePage } from "@/pages/home/HomePage";
+import { LoginPage } from "@/pages/auth/LoginPage";
+import { KakaoCallbackPage } from "@/pages/auth/KakaoCallbackPage";
+import { BattleListPage } from "@/pages/battle/BattleListPage";
+import { BattleCreatePage } from "@/pages/battle/BattleCreatePage";
+import { MarketListPage } from "@/pages/market/MarketListPage";
+import { MyPage } from "@/pages/my/MyPage";
+import ProfileEditPage from "@/pages/my/ProfileEditPage";
+import PointHistoryPage from "@/pages/my/PointHistoryPage";
+import VisitCertificationPage from "@/pages/my/VisitCertificationPage";
+import MarketReportPage from "@/pages/market/MarketReportPage";
+import ReputationDetailPage from "@/pages/reputation/ReputationDetailPage";
+import AdminBattleReportPage from "@/pages/admin/battle/AdminBattleReportPage";
+import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import AdminBattleListPage from "@/pages/admin/battle/AdminBattleListPage";
+import AdminBattleDetailPage from "@/pages/admin/battle/AdminBattleDetailPage";
+import AdminBattleAnalysisPage from "@/pages/admin/battle/AdminBattleAnalysisPage";
+import AdminMarketListPage from "@/pages/admin/market/AdminMarketListPage";
+import AdminMarketCreatePage from "@/pages/admin/market/AdminMarketCreatePage";
+import AdminMarketDetailPage from "@/pages/admin/market/AdminMarketDetailPage";
+import AdminMarketResultPage from "@/pages/admin/market/AdminMarketResultPage";
+import AdminMarketProblemListPage from "@/pages/admin/market/AdminMarketProblemListPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
 
 // Route Guards
-import ProtectedRoute from './ProtectedRoute';
-import AdminRoute from './AdminRoute';
+import ProtectedRoute from "./ProtectedRoute";
+import AdminRoute from "./AdminRoute";
 
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <AppShell />,
     children: [
       // Public Routes
@@ -41,21 +41,21 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: 'login',
+        path: "login",
         element: <LoginPage />,
       },
       {
-        path: 'auth/kakao/callback',
+        path: "auth/kakao/callback",
         element: <KakaoCallbackPage />,
       },
 
       // Battle Routes
       {
-        path: 'battles',
+        path: "battles",
         element: <BattleListPage />,
       },
       {
-        path: 'battles/new',
+        path: "battles/new",
         element: (
           <ProtectedRoute>
             <BattleCreatePage />
@@ -63,21 +63,21 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'battles/:battleId',
-        lazy: () => import('@/pages/battle/BattleDetailPage'),
+        path: "battles/:battleId",
+        lazy: () => import("@/pages/battle/BattleDetailPage"),
       },
 
       // Market Routes
       {
-        path: 'markets',
+        path: "markets",
         element: <MarketListPage />,
       },
       {
-        path: 'markets/:marketId',
-        lazy: () => import('@/pages/market/MarketDetailPage'),
+        path: "markets/:marketId",
+        lazy: () => import("@/pages/market/MarketDetailPage"),
       },
       {
-        path: 'markets/:marketId/report',
+        path: "markets/:marketId/report",
         element: (
           <ProtectedRoute>
             <MarketReportPage />
@@ -87,7 +87,7 @@ export const router = createBrowserRouter([
 
       // Protected Routes
       {
-        path: 'my',
+        path: "my",
         element: (
           <ProtectedRoute>
             <MyPage />
@@ -95,7 +95,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'my/profile',
+        path: "my/profile",
         element: (
           <ProtectedRoute>
             <ProfileEditPage />
@@ -103,7 +103,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'my/points',
+        path: "my/points",
         element: (
           <ProtectedRoute>
             <PointHistoryPage />
@@ -111,7 +111,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'my/visit-certifications',
+        path: "my/visit-certifications",
         element: (
           <ProtectedRoute>
             <VisitCertificationPage />
@@ -121,13 +121,13 @@ export const router = createBrowserRouter([
 
       // Reputation Routes
       {
-        path: 'reputations/:memberId',
+        path: "reputations/:memberId",
         element: <ReputationDetailPage />,
       },
 
       // Admin Routes
       {
-        path: 'admin',
+        path: "admin",
         element: (
           <AdminRoute>
             <AdminDashboardPage />
@@ -135,7 +135,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/battles',
+        path: "admin/battles",
         element: (
           <AdminRoute>
             <AdminBattleListPage />
@@ -143,7 +143,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/battles/:battleId',
+        path: "admin/battles/:battleId",
         element: (
           <AdminRoute>
             <AdminBattleDetailPage />
@@ -151,7 +151,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/battles/:battleId/analysis',
+        path: "admin/battles/:battleId/analysis",
         element: (
           <AdminRoute>
             <AdminBattleAnalysisPage />
@@ -159,7 +159,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/battles/:battleId/report',
+        path: "admin/battles/:battleId/report",
         element: (
           <AdminRoute>
             <AdminBattleReportPage />
@@ -167,7 +167,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/markets',
+        path: "admin/markets",
         element: (
           <AdminRoute>
             <AdminMarketListPage />
@@ -175,7 +175,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/markets/new',
+        path: "admin/markets/new",
         element: (
           <AdminRoute>
             <AdminMarketCreatePage />
@@ -183,7 +183,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/markets/problems',
+        path: "admin/markets/problems",
         element: (
           <AdminRoute>
             <AdminMarketProblemListPage />
@@ -191,7 +191,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/markets/:marketId',
+        path: "admin/markets/:marketId",
         element: (
           <AdminRoute>
             <AdminMarketDetailPage />
@@ -199,7 +199,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin/markets/:marketId/result',
+        path: "admin/markets/:marketId/result",
         element: (
           <AdminRoute>
             <AdminMarketResultPage />
@@ -209,7 +209,7 @@ export const router = createBrowserRouter([
 
       // 404 Page
       {
-        path: '*',
+        path: "*",
         element: <NotFoundPage />,
       },
     ],
