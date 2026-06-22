@@ -23,7 +23,7 @@ import { useMyReputationQuery } from "@/entities/reputation/model/useMyReputatio
 import { useUpdateResidenceMutation } from "@/entities/reputation/model/useUpdateResidenceMutation";
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { SIDO_LIST, SIGUNGU_MAP } from "@/shared/constants/regions";
-import { formatDate, formatKoreanMonthDay } from "@/shared/lib/formatDate";
+import { formatKoreanMonthDay } from "@/shared/lib/formatDate";
 import { toApiError } from "@/shared/api/apiError";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
 

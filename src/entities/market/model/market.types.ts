@@ -75,24 +75,98 @@ export type MarketDetail = MarketSummary & {
 
 export type MarketAnswerType = "YES_NO" | "MULTIPLE_CHOICE" | "NUMERIC_RANGE";
 
+export type AdminMarketCategory =
+  | "PRICE_INDEX"
+  | "TRANSACTION_VOLUME"
+  | "ACTUAL_PRICE"
+  | "POLICY_EVENT";
+
+export type AdminMarketMetricUnit = "PERCENT" | "COUNT" | "KRW" | "INDEX_POINT";
+
+export type MarketPriceModel = "POOL_SHARE";
+
+/** swagger.json AdminMarketOption 기준. Decimal 필드는 프로젝트 정책상 string으로 취급(§12). */
 export type AdminMarketOption = MarketOption & {
-  rangeMin?: string;
-  rangeMax?: string;
+  optionCode?: string;
+  displayOrder?: number;
+  rangeMin?: string | null;
+  rangeMax?: string | null;
   minInclusive?: boolean;
   maxInclusive?: boolean;
+  priceChangeRate?: string;
+  effectivePoolAmount?: string;
   totalContractQuantity?: string;
+  predictionCount?: number;
+  /** 정답 선택지 여부 (SETTLED 이후에만 의미 있음). */
+  isResult?: boolean;
 };
 
-/** 정산/환불 요약. 백엔드 고정 스키마가 확정되지 않아 키를 그대로 노출한다. */
-export type MarketSummaryRecord = Record<string, string | number | boolean | null>;
+/** GET /api/v1/admin/markets/{marketId} 응답의 settlementSummary. row가 없으면 settlementId/status는 null, count는 0. */
+export type AdminMarketDetailSettlementSummary = {
+  settlementId: number | null;
+  status: AdminMarketSettlementStatus | null;
+  totalDetailCount: number;
+  successCount: number;
+  failedCount: number;
+  unknownCount: number;
+  pendingCount: number;
+  updatedAt: string | null;
+};
 
-/** GET /api/v1/admin/markets/{marketId} 응답. */
-export type AdminMarketDetail = Omit<MarketDetail, "options"> & {
+/** GET /api/v1/admin/markets/{marketId} 응답의 refundSummary. row가 없으면 voidId/status는 null, count는 0. */
+export type AdminMarketDetailRefundSummary = {
+  voidId: number | null;
+  reasonType: AdminMarketRefundReasonType | null;
+  refundStatus: AdminMarketRefundStatus | null;
+  refundRequired: boolean;
+  totalDetailCount: number;
+  successCount: number;
+  failedCount: number;
+  unknownCount: number;
+  pendingCount: number;
+  updatedAt: string | null;
+};
+
+/**
+ * GET /api/v1/admin/markets/{marketId} 응답 (AdminMarketDetailResponse, swagger.json 2026-06 기준).
+ * public MarketDetail과 필드 구성이 달라(예: totalPoolAmount 없음, totalRealPoolAmount 등으로 대체)
+ * 더 이상 MarketDetail을 합성하지 않고 admin 응답 전용으로 독립 정의한다.
+ *
+ * 주의: pendingPredictionCount는 이 swagger 스키마에 없다. ResultConfirmCard가 이 필드로
+ * 결과 확정 가능 여부를 판단하고 있는데, 백엔드가 실제로 이 필드를 내려주는지 확인이 필요하다.
+ * 확인 전까지는 optional로 남겨 기존 화면이 깨지지 않게 한다.
+ */
+export type AdminMarketDetail = {
+  marketId: number;
+  title: string;
+  description?: string | null;
+  category: AdminMarketCategory;
   answerType: MarketAnswerType;
+  metricUnit: AdminMarketMetricUnit;
+  status: MarketStatus;
+  displayStatus: MarketDisplayStatus;
+  canPredict: boolean;
+  priceModel: MarketPriceModel;
+  closeAt: string;
+  judgeDate: string | null;
+  settleDueAt: string | null;
+  settledAt: string | null;
+  feeRate: string;
+  feeAmount: string | null;
+  settlementPool: string | null;
+  judgeDataSource?: string | null;
+  judgeCriteria?: string | null;
+  resultOptionId: number | null;
+  resultValue: string | null;
+  resultText: string | null;
+  totalRealPoolAmount: string;
+  totalVirtualPoolAmount: string;
+  totalEffectivePoolAmount: string;
+  totalPredictionCount: number;
   options: AdminMarketOption[];
-  settlementSummary?: MarketSummaryRecord | null;
-  refundSummary?: MarketSummaryRecord | null;
-  /** 처리 대기 중인(POINT_PENDING/POINT_UNKNOWN) 예측 건수. 응답에 없으면 알 수 없음(undefined)으로 취급. */
+  settlementSummary: AdminMarketDetailSettlementSummary;
+  refundSummary: AdminMarketDetailRefundSummary;
+  /** @deprecated 스펙/swagger에 없는 필드. 백엔드 확인 필요(market.types.ts 상단 주석 참고). */
   pendingPredictionCount?: number;
 };
 
@@ -137,6 +211,8 @@ export type AdminMarketStatusCounts = {
   active: number;
   closedByTime: number;
   closed: number;
+  /** 2026-06 swagger 갱신으로 추가된 필드. */
+  dataPending: number;
   settlementInProgress: number;
   settled: number;
   voided: number;
@@ -187,6 +263,195 @@ export type AdminMarketProblemListResponse = {
   totalElements: number;
   totalPages: number;
   last: boolean;
+};
+
+// ---- 관리자 정산/환불 조회 (swagger.json 기준, 2026-06 갱신) ----
+
+export type AdminMarketSettlementStatus =
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "FAILED";
+
+export type AdminMarketRefundStatus =
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "FAILED";
+
+export type AdminMarketRefundReasonType =
+  | "DATA_UNAVAILABLE"
+  | "ADMIN_ERROR"
+  | "MARKET_CANCELLED"
+  | "NO_TRANSACTION"
+  | "ETC";
+
+/** 정산/환불 detail item의 처리 상태. */
+export type AdminMarketDetailItemStatus = "PENDING" | "SUCCESS" | "FAILED" | "UNKNOWN";
+
+/** GET /api/v1/admin/markets/{marketId}/settlements 응답. 정산 row가 없으면 id/status 계열은 null, count는 0. */
+export type AdminMarketSettlementSummary = {
+  marketId: number;
+  marketTitle: string;
+  marketStatus: MarketStatus;
+  settlementId: number | null;
+  settlementStatus: AdminMarketSettlementStatus | null;
+  resultOptionId: number | null;
+  resultOptionText: string | null;
+  /** Decimal. swagger 스키마는 number로 표기되어 있으나 MARKET_API_SPEC §1-2/§9 기준
+   * 정산 응답은 BigDecimalPlainStringSerializer로 String 직렬화된다고 명시되어 있어 string으로 취급한다.
+   * 실제 응답이 number로 내려오면 이 타입과 파싱 로직을 다시 확인해야 한다. */
+  totalPool: string;
+  feeRate: string;
+  feeAmount: string;
+  settlementPool: string;
+  winningContractQuantity: string;
+  payoutPerContract: string;
+  burnedPointAmount: string;
+  totalDetailCount: number;
+  successCount: number;
+  failedCount: number;
+  unknownCount: number;
+  pendingCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type AdminMarketSettlementDetailListParams = {
+  page?: number;
+  size?: number;
+  status?: AdminMarketDetailItemStatus;
+};
+
+/**
+ * GET /api/v1/admin/markets/{marketId}/settlements/{settlementId}/details 응답의 content item.
+ * (AdminSettlementDetailResponse, MARKET_API_SPEC.md 부록 "정산 조회" 2026-06 갱신 기준으로 분리됨)
+ */
+export type AdminMarketSettlementDetailItem = {
+  settlementDetailId: number;
+  settlementId: number;
+  predictionId: number;
+  memberId: number;
+  selectedOptionId: number;
+  /** 정산 당시 Prediction 원금 스냅샷(market_settlement_detail.original_point_amount). Decimal string. */
+  pointAmount: string;
+  contractQuantity: string;
+  settledAmount: string;
+  profitAmount: string;
+  status: AdminMarketDetailItemStatus;
+  failureReason: string | null;
+  idempotencyKey: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminMarketSettlementDetailPage = {
+  content: AdminMarketSettlementDetailItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+};
+
+/**
+ * GET /api/v1/admin/markets/{marketId}/refunds/{voidId}/details 응답의 content item.
+ * (AdminRefundDetailResponse, 정산 전용 필드 미포함)
+ */
+export type AdminMarketRefundDetailItem = {
+  refundDetailId: number;
+  voidId: number;
+  predictionId: number;
+  memberId: number;
+  /** 참여 포인트(Prediction 기준). Decimal string. */
+  pointAmount: string;
+  refundAmount: string;
+  status: AdminMarketDetailItemStatus;
+  failureReason: string | null;
+  idempotencyKey: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** GET /api/v1/admin/markets/{marketId}/refunds 응답. void row가 없으면 id/status 계열은 null, count는 0. */
+export type AdminMarketRefundSummary = {
+  marketId: number;
+  marketTitle: string;
+  marketStatus: MarketStatus;
+  voidId: number | null;
+  reasonType: AdminMarketRefundReasonType | null;
+  reasonDetail: string | null;
+  refundStatus: AdminMarketRefundStatus | null;
+  refundRequired: boolean;
+  /** Decimal string. AdminMarketSettlementSummary.totalPool 주석 참고. */
+  totalRefundAmount: string;
+  totalDetailCount: number;
+  successCount: number;
+  failedCount: number;
+  unknownCount: number;
+  pendingCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type AdminMarketRefundDetailListParams = AdminMarketSettlementDetailListParams;
+
+export type AdminMarketRefundDetailPage = {
+  content: AdminMarketRefundDetailItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+};
+
+/** PATCH /api/v1/admin/markets/{marketId}/void 요청. */
+export type VoidMarketRequest = {
+  reasonCode: AdminMarketRefundReasonType;
+  reason: string;
+};
+
+/** PATCH /api/v1/admin/markets/{marketId}/void 응답. */
+export type VoidMarketResponse = {
+  marketId: number;
+  voidId: number;
+  status: MarketStatus;
+  refundRequired: boolean;
+  refundablePredictionCount: number;
+  reasonCode: AdminMarketRefundReasonType;
+  reason: string;
+};
+
+/** POST /api/v1/admin/markets/{marketId}/refunds, POST .../refunds/retry 공통 응답. */
+export type RefundMarketResponse = {
+  marketId: number;
+  voidId: number;
+  refundTargetCount: number;
+  successCount: number;
+  failedCount: number;
+  unknownCount: number;
+  marketStatus: MarketStatus;
+  refundStatus: AdminMarketRefundStatus;
+};
+
+/** POST /api/v1/admin/markets/{marketId}/settlements, POST .../settlements/retry 공통 응답. */
+export type SettleMarketResponse = {
+  marketId: number;
+  settlementId: number;
+  resultOptionId: number;
+  /** Decimal string. AdminMarketSettlementSummary.totalPool 주석 참고. */
+  totalPool: string;
+  feeAmount: string;
+  settlementPool: string;
+  winningContractQuantity: string;
+  payoutPerContract: string;
+  burnedPointAmount: string;
+  winnerCount: number;
+  loserCount: number;
+  successCount: number;
+  failedCount: number;
+  marketStatus: MarketStatus;
+  settlementStatus: AdminMarketSettlementStatus;
 };
 
 export type MarketPredictionQuoteResponse = {

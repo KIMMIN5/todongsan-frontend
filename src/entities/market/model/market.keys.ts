@@ -1,5 +1,7 @@
 import type {
   AdminMarketProblemListParams,
+  AdminMarketRefundDetailListParams,
+  AdminMarketSettlementDetailListParams,
   MarketListParams,
   MarketPriceHistoryParams,
 } from "./market.types";
@@ -32,4 +34,35 @@ export const marketKeys = {
   adminProblemLists: () => [...marketKeys.all, "admin-problem-list"] as const,
   adminProblemList: (params: AdminMarketProblemListParams) =>
     [...marketKeys.adminProblemLists(), params] as const,
+
+  adminSettlementSummaries: () =>
+    [...marketKeys.all, "admin-settlement-summary"] as const,
+  adminSettlementSummary: (marketId: number) =>
+    [...marketKeys.adminSettlementSummaries(), marketId] as const,
+
+  adminSettlementDetailLists: () =>
+    [...marketKeys.all, "admin-settlement-detail-list"] as const,
+  adminSettlementDetailList: (
+    marketId: number,
+    settlementId: number,
+    params: AdminMarketSettlementDetailListParams = {},
+  ) =>
+    [
+      ...marketKeys.adminSettlementDetailLists(),
+      marketId,
+      settlementId,
+      params,
+    ] as const,
+
+  adminRefundSummaries: () => [...marketKeys.all, "admin-refund-summary"] as const,
+  adminRefundSummary: (marketId: number) =>
+    [...marketKeys.adminRefundSummaries(), marketId] as const,
+
+  adminRefundDetailLists: () =>
+    [...marketKeys.all, "admin-refund-detail-list"] as const,
+  adminRefundDetailList: (
+    marketId: number,
+    voidId: number,
+    params: AdminMarketRefundDetailListParams = {},
+  ) => [...marketKeys.adminRefundDetailLists(), marketId, voidId, params] as const,
 };
