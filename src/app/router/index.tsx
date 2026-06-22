@@ -19,7 +19,6 @@ import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import AdminBattleListPage from '@/pages/admin/battle/AdminBattleListPage';
 import AdminBattleDetailPage from '@/pages/admin/battle/AdminBattleDetailPage';
 import AdminBattleAnalysisPage from '@/pages/admin/battle/AdminBattleAnalysisPage';
-import AdminBattleReportPage from '@/pages/admin/battle/AdminBattleReportPage';
 import AdminMarketListPage from '@/pages/admin/market/AdminMarketListPage';
 import AdminMarketCreatePage from '@/pages/admin/market/AdminMarketCreatePage';
 import AdminMarketDetailPage from '@/pages/admin/market/AdminMarketDetailPage';
