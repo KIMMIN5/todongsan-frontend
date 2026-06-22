@@ -32,7 +32,7 @@ export type BattleSummary = {
   optionB: string;
   status: BattleStatus;
   voteCount: number;
-  commentCount: number;
+  commentCount?: number;
   startAt: string;
   endAt: string;
   createdAt: string;

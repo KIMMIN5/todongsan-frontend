@@ -54,10 +54,12 @@ export function BattleCard({ battle }: BattleCardProps) {
               <Users className="size-3.5" />
               {battle.voteCount.toLocaleString()}명 참여
             </span>
-            <span className="inline-flex items-center gap-1">
-              <MessageSquare className="size-3.5" />
-              {battle.commentCount.toLocaleString()}
-            </span>
+            {battle.commentCount !== undefined && (
+              <span className="inline-flex items-center gap-1">
+                <MessageSquare className="size-3.5" />
+                {battle.commentCount.toLocaleString()}
+              </span>
+            )}
           </div>
           <span>마감 {formatDateTime(battle.endAt)}</span>
         </div>
