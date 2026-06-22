@@ -42,7 +42,6 @@ export const createBattleSchema = z
       .optional(),
     sido: z.string().optional(),
     sigu: z.string().optional(),
-    startAt: z.string().min(1, "시작 일시를 선택해 주세요."),
     endAt: z.string().min(1, "마감 일시를 선택해 주세요."),
   })
   .refine((values) => values.optionA.trim() !== values.optionB.trim(), {
@@ -54,9 +53,9 @@ export const createBattleSchema = z
     path: ["sigu"],
   })
   .refine(
-    (values) => new Date(values.startAt).getTime() < new Date(values.endAt).getTime(),
+    (values) => new Date(values.endAt).getTime() > Date.now(),
     {
-      message: "마감 일시는 시작 일시보다 뒤여야 합니다.",
+      message: "마감 일시는 현재 시각보다 뒤여야 합니다.",
       path: ["endAt"],
     },
   );

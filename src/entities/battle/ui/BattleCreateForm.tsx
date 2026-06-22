@@ -33,6 +33,16 @@ function toLocalDateTime(value: string): string {
   return value.length === 16 ? `${value}:00` : value;
 }
 
+// 현재 시각을 LocalDateTime 문자열("YYYY-MM-DDTHH:mm:ss")로 반환
+function nowToLocalDateTime(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+    `T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+  );
+}
+
 export function BattleCreateForm({
   onSubmit,
   isSubmitting,
@@ -53,7 +63,6 @@ export function BattleCreateForm({
       description: "",
       sido: "",
       sigu: "",
-      startAt: "",
       endAt: "",
     },
   });
@@ -66,7 +75,7 @@ export function BattleCreateForm({
       title: values.title.trim(),
       optionA: values.optionA.trim(),
       optionB: values.optionB.trim(),
-      startAt: toLocalDateTime(values.startAt),
+      startAt: nowToLocalDateTime(),
       endAt: toLocalDateTime(values.endAt),
     };
 
@@ -208,36 +217,19 @@ export function BattleCreateForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <label htmlFor="battle-start-at" className="text-xs font-bold text-slate-700">
-            시작 일시
-          </label>
-          <Input
-            id="battle-start-at"
-            type="datetime-local"
-            aria-invalid={Boolean(errors.startAt)}
-            {...register("startAt")}
-          />
-          {errors.startAt && (
-            <p className="text-xs text-destructive">{errors.startAt.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="battle-end-at" className="text-xs font-bold text-slate-700">
-            마감 일시
-          </label>
-          <Input
-            id="battle-end-at"
-            type="datetime-local"
-            aria-invalid={Boolean(errors.endAt)}
-            {...register("endAt")}
-          />
-          {errors.endAt && (
-            <p className="text-xs text-destructive">{errors.endAt.message}</p>
-          )}
-        </div>
+      <div className="space-y-1.5">
+        <label htmlFor="battle-end-at" className="text-xs font-bold text-slate-700">
+          마감 일시
+        </label>
+        <Input
+          id="battle-end-at"
+          type="datetime-local"
+          aria-invalid={Boolean(errors.endAt)}
+          {...register("endAt")}
+        />
+        {errors.endAt && (
+          <p className="text-xs text-destructive">{errors.endAt.message}</p>
+        )}
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>

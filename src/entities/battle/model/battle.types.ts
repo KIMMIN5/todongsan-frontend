@@ -32,6 +32,7 @@ export type BattleSummary = {
   optionB: string;
   status: BattleStatus;
   voteCount: number;
+  commentCount: number;
   startAt: string;
   endAt: string;
   createdAt: string;
@@ -192,4 +193,17 @@ export type MyCreatedBattleListParams = {
   status?: BattleStatus[]; // PENDING/ACTIVE/CLOSED/CANCELLED, 콤마 직렬화
   page?: number;
   size?: number;
+};
+
+// ---- 관리자 전용 ----
+
+export type AdminBattlePendingListParams = {
+  page?: number;
+  size?: number;
+};
+
+// PATCH approve/reject/cancel 응답 (battleId + 변경된 status)
+export type AdminBattleStatusResponse = {
+  battleId: number;
+  status: BattleStatus;
 };
