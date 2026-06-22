@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { cn } from "@/shared/lib/utils";
 
+import { MARKET_LABELS } from "../lib/marketLabels";
 import type { MarketSummary } from "../model/market.types";
 import { MarketStatusBadge } from "./MarketStatusBadge";
 
@@ -42,9 +43,11 @@ export function MarketCard({ market }: MarketCardProps) {
           <div className="flex items-center justify-between gap-3">
             <MarketStatusBadge displayStatus={market.displayStatus} />
             <span className="text-xs text-muted-foreground">
-              유동성{" "}
+              {MARKET_LABELS.liquidity}{" "}
               <strong className="font-semibold tabular-nums text-foreground">
-                {formatPointAmount(market.totalPoolAmount)}
+                {formatPointAmount(
+                  market.totalRealPoolAmount ?? market.totalPoolAmount,
+                )}
               </strong>
             </span>
           </div>

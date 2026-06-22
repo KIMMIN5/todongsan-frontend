@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
@@ -6,6 +6,7 @@ import type {
   MarketDisplayStatus,
   MarketStatus,
 } from "@/entities/market/model/market.types";
+import { getOptionColorMap } from "@/entities/market/lib/optionColor";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
 import { CreateMarketPredictionPanel } from "@/features/market-prediction/create/ui/CreateMarketPredictionPanel";
@@ -88,7 +89,8 @@ export default function MarketDetailPage() {
               {data.resultAnnounceAt
                 ? ` · 결과 발표 ${formatDateTime(data.resultAnnounceAt)}`
                 : ""}{" "}
-              · 유동성 {formatPointAmount(data.totalPoolAmount)}
+              · 유동성{" "}
+              {formatPointAmount(data.totalRealPoolAmount ?? data.totalPoolAmount)}
             </p>
           </header>
 
@@ -123,6 +125,24 @@ export default function MarketDetailPage() {
                 marketDisplayStatus={data.displayStatus}
                 enabled={isAuthenticated || hasDevMemberId()}
               />
+
+              {isReportAvailable(data.displayStatus) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>AI 리포트</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      AI가 이 마켓의 결과를 분석한 리포트를 확인하세요.
+                    </p>
+                    <Button asChild className="w-full">
+                      <Link to={`/markets/${data.marketId}/report`}>
+                        AI 리포트 보기
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             <aside className="lg:sticky lg:top-20">
@@ -233,18 +253,33 @@ function MyPredictionSection({
     (option) => option.optionId === data.selectedOptionId,
   )?.content;
 
+  const optionColor = getOptionColorMap(options.map((option) => option.optionId))[
+    data.selectedOptionId
+  ];
+
   return (
     <MyMarketPredictionCard
       prediction={data}
       selectedOptionLabel={selectedOptionLabel}
       marketStatus={marketStatus}
       marketDisplayStatus={marketDisplayStatus}
+      optionColor={optionColor}
     />
   );
 }
 
 function hasDevMemberId() {
   return Boolean(import.meta.env.DEV && import.meta.env.VITE_DEV_MEMBER_ID);
+}
+
+function isReportAvailable(displayStatus: MarketDisplayStatus): boolean {
+  return (
+    displayStatus === "CLOSED_BY_TIME" ||
+    displayStatus === "DATA_PENDING" ||
+    displayStatus === "CLOSED" ||
+    displayStatus === "SETTLEMENT_IN_PROGRESS" ||
+    displayStatus === "SETTLED"
+  );
 }
 
 function MarketDetailSkeleton() {

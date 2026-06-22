@@ -7,6 +7,7 @@ import {
   formatPointAmount,
 } from "@/shared/lib/formatDecimal";
 import { Card, CardContent } from "@/shared/ui/card";
+import { MARKET_LABELS } from "@/entities/market/lib/marketLabels";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 
 import type { MyMarketPredictionListItem } from "@/entities/prediction/model/prediction.types";
@@ -44,20 +45,20 @@ export function MyMarketPredictionListCard({
         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-3">
           <InfoRow label="선택" value={item.selectedOptionContent} />
           <InfoRow
-            label="참여 포인트"
+            label={MARKET_LABELS.entryPoint}
             value={formatPointAmount(item.pointAmount)}
           />
           <InfoRow
-            label="체결 가격"
+            label={MARKET_LABELS.entryPredictionRate}
             value={
               item.priceSnapshot ? formatPercent(item.priceSnapshot) : "확인 중"
             }
           />
           <InfoRow
-            label="계약 수량"
+            label={MARKET_LABELS.winShare}
             value={
               item.contractQuantity
-                ? `${formatMarketPrice(item.contractQuantity, 2)}계약`
+                ? formatMarketPrice(item.contractQuantity, 2)
                 : "확인 중"
             }
           />
@@ -65,14 +66,14 @@ export function MyMarketPredictionListCard({
 
           {item.settledAmount && (
             <InfoRow
-              label="정산 금액"
+              label={MARKET_LABELS.settlementAmount}
               value={formatPointAmount(item.settledAmount)}
               highlight
             />
           )}
           {item.refundAmount && (
             <InfoRow
-              label="환불 금액"
+              label={MARKET_LABELS.refundAmount}
               value={formatPointAmount(item.refundAmount)}
               highlight
             />

@@ -1,11 +1,16 @@
 import { PageContainer } from "@/shared/ui/page-container";
 import { PageHeader } from "@/shared/ui/page-header";
+import { Skeleton } from "@/shared/ui/skeleton";
+import { useMyReputationQuery } from "@/entities/reputation/model/useMyReputationQuery";
+import { ReputationSummaryCard } from "@/entities/reputation/ui/ReputationSummaryCard";
 
 import { MyProfileCard } from "./ui/MyProfileCard";
 import { MyPointSummaryCard } from "./ui/MyPointSummaryCard";
 import { MyActivityPanel } from "./ui/MyActivityPanel";
 
 export function MyPage() {
+  const reputationQuery = useMyReputationQuery();
+
   return (
     <PageContainer>
       <PageHeader
@@ -19,6 +24,13 @@ export function MyPage() {
         <div className="md:col-span-2 space-y-6">
           <MyPointSummaryCard />
           <MyActivityPanel />
+
+          {reputationQuery.isPending && (
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          )}
+          {!reputationQuery.isPending && reputationQuery.data && (
+            <ReputationSummaryCard reputation={reputationQuery.data} />
+          )}
         </div>
       </div>
     </PageContainer>

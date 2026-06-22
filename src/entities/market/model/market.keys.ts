@@ -1,4 +1,5 @@
 import type {
+  AdminMarketProblemListParams,
   MarketListParams,
   MarketPriceHistoryParams,
 } from "./market.types";
@@ -21,4 +22,14 @@ export const marketKeys = {
     marketId: number,
     params: MarketPriceHistoryParams = {},
   ) => [...marketKeys.priceHistoryRoot(marketId), params] as const,
+
+  adminStatusCounts: () => [...marketKeys.all, "admin-status-counts"] as const,
+
+  adminDetails: () => [...marketKeys.all, "admin-detail"] as const,
+  adminDetail: (marketId: number) =>
+    [...marketKeys.adminDetails(), marketId] as const,
+
+  adminProblemLists: () => [...marketKeys.all, "admin-problem-list"] as const,
+  adminProblemList: (params: AdminMarketProblemListParams) =>
+    [...marketKeys.adminProblemLists(), params] as const,
 };

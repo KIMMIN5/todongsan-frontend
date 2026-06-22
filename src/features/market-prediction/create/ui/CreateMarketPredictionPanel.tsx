@@ -8,6 +8,10 @@ import type {
   MarketOption,
   MarketPredictionQuoteResponse,
 } from "@/entities/market/model/market.types";
+import {
+  MARKET_CAPTIONS,
+  MARKET_LABELS,
+} from "@/entities/market/lib/marketLabels";
 import { getOptionColorMap } from "@/entities/market/lib/optionColor";
 import { useMarketPredictionQuoteMutation } from "@/entities/market/model/useMarketPredictionQuoteMutation";
 import { predictionKeys } from "@/entities/prediction/model/prediction.keys";
@@ -384,23 +388,31 @@ type QuotePreviewProps = {
 };
 
 function QuotePreview({ data }: QuotePreviewProps) {
+  const estimatedContractQuantity = formatMarketPrice(
+    data.estimatedContractQuantity,
+    2,
+  );
+
   return (
     <div className="space-y-2 rounded-lg bg-muted/40 p-3">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">예상 체결가</span>
+        <span className="text-muted-foreground">{MARKET_LABELS.predictionRate}</span>
         <span className="font-medium tabular-nums text-foreground">
           {formatPercent(data.currentPrice)}
         </span>
       </div>
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">예상 계약 수량</span>
+        <span className="text-muted-foreground">
+          예상 {MARKET_LABELS.winShare}
+        </span>
         <span className="font-medium tabular-nums text-foreground">
-          {formatMarketPrice(data.estimatedContractQuantity, 2)}계약
+          {estimatedContractQuantity === "-"
+            ? estimatedContractQuantity
+            : `${estimatedContractQuantity}계약`}
         </span>
       </div>
       <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
-        계약 수량은 정산 시 분배 비율을 계산하는 기준입니다. 실제 수령 포인트는
-        최종 참여 풀과 정산 결과에 따라 달라집니다.
+        {MARKET_CAPTIONS.winShare}
       </p>
       {data.notice ? (
         <p className="text-xs leading-relaxed text-muted-foreground">

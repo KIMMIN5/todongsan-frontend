@@ -33,8 +33,7 @@ export function KakaoCallbackPage() {
         refreshToken: data.refreshToken,
         memberId: data.memberId,
         nickname: data.nickname,
-        // TODO: 백엔드 OAuth 응답에 role 필드가 확정되면 data.role로 교체한다.
-        role: "USER",
+        role: data.role,
       });
       navigate(ROUTE_PATH.HOME, { replace: true });
     },

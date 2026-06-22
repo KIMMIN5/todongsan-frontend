@@ -1,5 +1,48 @@
 import { http, HttpResponse } from 'msw';
 
+const MOCK_MARKET_DETAILS: Record<number, object> = {
+  1: {
+    marketId: 1,
+    title: '2024년 강남구 아파트 평균 가격 상승률',
+    description: '2024년 12월 기준 강남구 아파트 평균 가격이 전년 대비 몇 % 상승할까요?',
+    status: 'ACTIVE',
+    closeAt: '2026-12-31T23:59:59',
+    resultAnnounceAt: '2027-01-15T00:00:00',
+    totalPoolAmount: '15000.00',
+    options: [
+      { optionId: 1, content: '0% 이상 5% 미만', currentPrice: '0.65432100', realPoolAmount: '8000.00', virtualPoolAmount: '25000.00' },
+      { optionId: 2, content: '5% 이상 10% 미만', currentPrice: '0.34567900', realPoolAmount: '7000.00', virtualPoolAmount: '25000.00' },
+    ],
+  },
+  2: {
+    marketId: 2,
+    title: '2025년 서초구 오피스텔 공실률 예측',
+    description: '2025년 말 서초구 오피스텔 공실률이 몇 % 범위에 있을까요?',
+    status: 'SETTLED',
+    closeAt: '2025-06-30T23:59:59',
+    resultAnnounceAt: '2025-07-15T00:00:00',
+    totalPoolAmount: '32500.00',
+    options: [
+      { optionId: 3, content: '5% 미만', currentPrice: '0.28000000', realPoolAmount: '9100.00', virtualPoolAmount: '25000.00' },
+      { optionId: 4, content: '5% 이상 10% 미만', currentPrice: '0.52000000', realPoolAmount: '16900.00', virtualPoolAmount: '25000.00' },
+      { optionId: 5, content: '10% 이상', currentPrice: '0.20000000', realPoolAmount: '6500.00', virtualPoolAmount: '25000.00' },
+    ],
+  },
+  3: {
+    marketId: 3,
+    title: '마포구 래미안 단지 vs 성동구 아크로 단지 선호도',
+    description: '실거주 선호도 기준으로 어느 단지를 선택하시겠습니까?',
+    status: 'SETTLED',
+    closeAt: '2025-05-31T23:59:59',
+    resultAnnounceAt: '2025-06-10T00:00:00',
+    totalPoolAmount: '21000.00',
+    options: [
+      { optionId: 6, content: '마포 래미안 푸르지오', currentPrice: '0.57600000', realPoolAmount: '12096.00', virtualPoolAmount: '25000.00' },
+      { optionId: 7, content: '성동 아크로 서울포레스트', currentPrice: '0.42400000', realPoolAmount: '8904.00', virtualPoolAmount: '25000.00' },
+    ],
+  },
+};
+
 export const marketHandlers = [
   // 마켓 목록 조회
   http.get('/api/v1/markets', ({ request }) => {
@@ -7,35 +50,24 @@ export const marketHandlers = [
     const page = Number(url.searchParams.get('page')) || 0;
     const size = Number(url.searchParams.get('size')) || 20;
 
+    const content = Object.values(MOCK_MARKET_DETAILS).map((m: any) => ({
+      marketId: m.marketId,
+      title: m.title,
+      status: m.status,
+      closeAt: m.closeAt,
+      totalPoolAmount: m.totalPoolAmount,
+      options: m.options.map((o: any) => ({ optionId: o.optionId, content: o.content, currentPrice: o.currentPrice })),
+    }));
+
     return HttpResponse.json({
       success: true,
       errorCode: null,
       message: null,
       data: {
-        content: [
-          {
-            marketId: 1,
-            title: '2024년 강남구 아파트 평균 가격 상승률',
-            status: 'ACTIVE',
-            closeAt: '2026-12-31T23:59:59',
-            totalPoolAmount: '15000.00',
-            options: [
-              {
-                optionId: 1,
-                content: '0% 이상 5% 미만',
-                currentPrice: '0.65432100',
-              },
-              {
-                optionId: 2,
-                content: '5% 이상 10% 미만',
-                currentPrice: '0.34567900',
-              },
-            ],
-          },
-        ],
+        content,
         page,
         size,
-        totalElements: 1,
+        totalElements: content.length,
         totalPages: 1,
         last: true,
       },
@@ -46,36 +78,13 @@ export const marketHandlers = [
   // 마켓 상세 조회
   http.get('/api/v1/markets/:marketId', ({ params }) => {
     const marketId = Number(params.marketId);
+    const market = MOCK_MARKET_DETAILS[marketId] ?? MOCK_MARKET_DETAILS[1];
 
     return HttpResponse.json({
       success: true,
       errorCode: null,
       message: null,
-      data: {
-        marketId,
-        title: '2024년 강남구 아파트 평균 가격 상승률',
-        description: '2024년 12월 기준 강남구 아파트 평균 가격이 전년 대비 몇 % 상승할까요?',
-        status: 'ACTIVE',
-        closeAt: '2026-12-31T23:59:59',
-        resultAnnounceAt: '2027-01-15T00:00:00',
-        totalPoolAmount: '15000.00',
-        options: [
-          {
-            optionId: 1,
-            content: '0% 이상 5% 미만',
-            currentPrice: '0.65432100',
-            realPoolAmount: '8000.00',
-            virtualPoolAmount: '25000.00',
-          },
-          {
-            optionId: 2,
-            content: '5% 이상 10% 미만',
-            currentPrice: '0.34567900',
-            realPoolAmount: '7000.00',
-            virtualPoolAmount: '25000.00',
-          },
-        ],
-      },
+      data: market,
       timestamp: new Date().toISOString(),
     });
   }),

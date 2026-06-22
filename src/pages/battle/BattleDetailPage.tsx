@@ -236,6 +236,7 @@ export default function BattleDetailPage() {
           />
         </CardContent>
       </Card>
+
     </PageContainer>
   );
 }
