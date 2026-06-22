@@ -1,4 +1,7 @@
+import { Link } from "react-router-dom";
+
 import { usePointBalanceQuery } from "@/entities/point/model/point.queries";
+import { buttonVariants } from "@/shared/ui/button";
 import {
   Card,
   CardContent,
@@ -8,6 +11,8 @@ import {
 } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
+import { cn } from "@/shared/lib/utils";
+import { ROUTE_PATH } from "@/shared/constants/routePath";
 
 export function MyPointSummaryCard() {
   const balanceQuery = usePointBalanceQuery();
@@ -28,6 +33,12 @@ export function MyPointSummaryCard() {
       </CardHeader>
       <CardContent>
         <p className="text-xs text-slate-500">예측 적중 및 선호 투표 참여로 획득 가능합니다.</p>
+        <Link
+          to={ROUTE_PATH.MY_POINTS}
+          className={cn(buttonVariants({ variant: "outline" }), "mt-2 w-full text-xs")}
+        >
+          포인트 내역 보기
+        </Link>
       </CardContent>
     </Card>
   );
