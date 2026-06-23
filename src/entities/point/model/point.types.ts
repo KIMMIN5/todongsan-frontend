@@ -1,16 +1,20 @@
 import type { BaseEntity } from '@/shared/types/common';
 
-// 포인트 거래 타입
-export type PointTransactionType = 
-  | 'EARN_VOTE'           // 배틀 투표 보상
-  | 'EARN_COMMENT'        // 댓글 작성 보상
-  | 'EARN_VISIT_CERT'     // 방문 인증 보상
-  | 'SPEND_MARKET'        // 마켓 예측 참여
-  | 'SPEND_INSIGHT'       // AI 리포트 생성
-  | 'SETTLE_MARKET'       // 마켓 정산 수익
-  | 'REFUND_MARKET'       // 마켓 환불
-  | 'REFUND_INSIGHT'      // AI 리포트 생성 실패 환불
-  | 'ADMIN_ADJUST';       // 관리자 조정
+// 포인트 거래 타입 (member-point-service PointHistoryType 기준, 13종)
+export type PointTransactionType =
+  | 'EARN_SIGNUP'           // 가입 보상
+  | 'EARN_VOTE'             // 배틀 투표 참여 보상
+  | 'EARN_VOTE_WIN'         // 배틀 투표 승리 보상
+  | 'EARN_COMMENT'          // 댓글 작성 보상
+  | 'EARN_BATTLE_APPROVED'  // 배틀 주제 승인 보상
+  | 'SPEND_MARKET'          // 마켓 예측 참여
+  | 'SPEND_INSIGHT'         // AI 리포트 생성
+  | 'SPEND_BATTLE_CREATE'   // 배틀 생성권 차감
+  | 'SPEND_SLOT'            // 슬롯 확장 차감
+  | 'SETTLE_MARKET'         // 마켓 정산 수익
+  | 'REFUND_MARKET'         // 마켓 환불
+  | 'REFUND_INSIGHT'        // AI 리포트 생성 실패 환불
+  | 'BURN';                 // 소수점 소각
 
 // 포인트 잔액 정보
 export interface PointBalance {
@@ -23,7 +27,7 @@ export interface PointHistory extends BaseEntity {
   id: number;
   memberId: number;
   type: PointTransactionType;
-  amount: string; // Decimal as string (+ 또는 -)
+  amount: string; // Decimal as string. 항상 양수(절대값)로 내려옴 — 증감 방향은 type prefix로 판단해야 함
   balanceSnapshot: string; // 거래 후 잔액
   reason?: string;
   referenceId?: number; // 관련 엔티티 ID (battleId, marketId 등)
