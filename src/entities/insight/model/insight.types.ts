@@ -123,3 +123,11 @@ export interface BattleInsightData extends AnalysisData {
     commentAnalysis?: string;
   };
 }
+
+export type MarketPublicDataReferenceResponse = {
+  title: string;
+  summary: string;
+  content: string;
+  dataAsOf: string | null;
+  aiAnalyzed: boolean;
+};

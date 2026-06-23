@@ -4,6 +4,7 @@ import { httpClient } from "@/shared/api/httpClient";
 import type {
   InsightReport,
   InsightReportStatusInfo,
+  MarketPublicDataReferenceResponse,
 } from "../model/insight.types";
 
 // Claude 출력이 "title: ...\n\nsummary: ...\n\ncontent: |\n  ..." 형식으로
@@ -115,6 +116,17 @@ export async function getBattleInsightReportStatus(
 ): Promise<InsightReportStatusInfo> {
   const response = await httpClient.get<ApiResponse<InsightReportStatusInfo>>(
     `/api/v1/insights/battles/${battleId}/report/status`,
+  );
+
+  return response.data.data;
+}
+
+export async function getMarketPublicDataReference(
+  marketId: number,
+): Promise<MarketPublicDataReferenceResponse> {
+  const response = await httpClient.get<ApiResponse<MarketPublicDataReferenceResponse>>(
+    `/api/v1/insights/markets/${marketId}/public-data-reference`,
+    { timeout: 60000 },
   );
 
   return response.data.data;

@@ -10,6 +10,7 @@ export const insightKeys = {
   marketReportStatus: (marketId: number) => ["insights", "marketReportStatus", marketId] as const,
   // admin-only
   battleReport: (battleId: number) => ["insights", "battleReport", battleId] as const,
+  marketPublicDataReference: (marketId: number) => ["insights", "marketPublicDataReference", marketId] as const,
   // user-facing battle report (별도 키 — 관리자 캐시와 분리)
   battleUserReport: (battleId: number) => ["insights", "battleUserReport", battleId] as const,
   battleUserReportStatus: (battleId: number) => ["insights", "battleUserReportStatus", battleId] as const,
