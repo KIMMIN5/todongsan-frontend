@@ -1,14 +1,5 @@
 import { useState } from "react";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
-  RotateCcw,
-  Settings2,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 
 import { PageContainer } from "@/shared/ui/page-container";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -19,7 +10,8 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Button } from "@/shared/ui/button";
 import { usePointBalanceQuery, usePointHistoryQuery } from "@/entities/point/model/point.queries";
-import type { PointHistoryFilterType, PointTransactionType } from "@/entities/point/model/point.types";
+import type { PointHistoryFilterType } from "@/entities/point/model/point.types";
+import { isIncreaseType } from "@/entities/point/lib/pointTransactionDirection";
 import { formatDateTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { cn } from "@/shared/lib/utils";
@@ -34,36 +26,18 @@ const FILTER_TABS: { value: PointHistoryFilterType | "ALL"; label: string }[] = 
   { value: "REFUND", label: "환불" },
 ];
 
-function getTransactionVisual(type: PointTransactionType) {
-  if (type.startsWith("EARN")) {
+// 거래 유형과 무관하게 증가/감소 방향으로만 아이콘을 통일한다.
+function getTransactionVisual(isIncrease: boolean) {
+  if (isIncrease) {
     return {
       Icon: ArrowUpRight,
       iconClassName:
         "bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 ring-1 ring-emerald-600/10",
     };
   }
-  if (type.startsWith("SPEND")) {
-    return {
-      Icon: ArrowDownRight,
-      iconClassName: "bg-gradient-to-br from-rose-50 to-rose-100 text-rose-600 ring-1 ring-rose-600/10",
-    };
-  }
-  if (type.startsWith("SETTLE")) {
-    return {
-      Icon: Sparkles,
-      iconClassName:
-        "bg-gradient-to-br from-violet-50 to-violet-100 text-violet-600 ring-1 ring-violet-600/10",
-    };
-  }
-  if (type.startsWith("REFUND")) {
-    return {
-      Icon: RotateCcw,
-      iconClassName: "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 ring-1 ring-blue-600/10",
-    };
-  }
   return {
-    Icon: Settings2,
-    iconClassName: "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 ring-1 ring-slate-600/10",
+    Icon: ArrowDownRight,
+    iconClassName: "bg-gradient-to-br from-rose-50 to-rose-100 text-rose-600 ring-1 ring-rose-600/10",
   };
 }
 
@@ -149,8 +123,8 @@ export default function PointHistoryPage() {
             <>
               <div className="space-y-1">
                 {data.content.map((item, index) => {
-                  const isPositive = !item.amount.startsWith("-");
-                  const { Icon, iconClassName } = getTransactionVisual(item.type);
+                  const isIncrease = isIncreaseType(item.type);
+                  const { Icon, iconClassName } = getTransactionVisual(isIncrease);
 
                   return (
                     <div
@@ -178,10 +152,10 @@ export default function PointHistoryPage() {
                         <p
                           className={cn(
                             "text-sm font-bold tabular-nums",
-                            isPositive ? "text-emerald-600" : "text-rose-600",
+                            isIncrease ? "text-emerald-600" : "text-rose-600",
                           )}
                         >
-                          {isPositive ? "+" : ""}
+                          {isIncrease ? "+" : "-"}
                           {formatPointAmount(item.amount)}
                         </p>
                         <p className="text-xs tabular-nums text-slate-400">
