@@ -2,6 +2,7 @@ import type { ApiResponse } from "@/shared/api/apiResponse";
 import { httpClient } from "@/shared/api/httpClient";
 
 import type {
+  ActivateMarketResponse,
   AdminMarketDetail,
   AdminMarketProblemListParams,
   AdminMarketProblemListResponse,
@@ -13,6 +14,8 @@ import type {
   AdminMarketSettlementDetailPage,
   AdminMarketSettlementSummary,
   AdminMarketStatusCounts,
+  CreateMarketRequest,
+  CreateMarketResponse,
   RefundMarketResponse,
   SettleMarketResponse,
   VoidMarketRequest,
@@ -22,6 +25,29 @@ import type {
 export async function getAdminMarketStatusCounts(): Promise<AdminMarketStatusCounts> {
   const response = await httpClient.get<ApiResponse<AdminMarketStatusCounts>>(
     "/api/v1/admin/markets/status-counts",
+  );
+
+  return response.data.data;
+}
+
+/** Market 생성. 항상 PENDING 상태로 생성되며 활성화 전까지 사용자에게 노출되지 않는다. */
+export async function createMarket(
+  request: CreateMarketRequest,
+): Promise<CreateMarketResponse> {
+  const response = await httpClient.post<ApiResponse<CreateMarketResponse>>(
+    "/api/v1/admin/markets",
+    request,
+  );
+
+  return response.data.data;
+}
+
+/** PENDING Market을 ACTIVE로 전환. */
+export async function activateMarket(
+  marketId: number,
+): Promise<ActivateMarketResponse> {
+  const response = await httpClient.patch<ApiResponse<ActivateMarketResponse>>(
+    `/api/v1/admin/markets/${marketId}/activate`,
   );
 
   return response.data.data;

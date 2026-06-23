@@ -85,6 +85,69 @@ export type AdminMarketMetricUnit = "PERCENT" | "COUNT" | "KRW" | "INDEX_POINT";
 
 export type MarketPriceModel = "POOL_SHARE";
 
+/** market-service RegionScope enum (CreateMarketRequest.regionScope, swagger.json에는 누락되어 백엔드 소스 기준으로 확인). */
+export type MarketRegionScope = "NON_REGIONAL" | "NATIONAL" | "REGIONAL";
+
+/**
+ * POST /api/v1/admin/markets 요청의 선택지 1건. swagger.json은 rangeMin/rangeMax/virtualPoolAmount를
+ * number로 표기하지만, 다른 Decimal 필드와 동일하게 string으로 보내도 서버가 파싱한다(§12 Decimal 정책 유지).
+ */
+export type CreateMarketOptionRequest = {
+  optionCode: string;
+  optionText: string;
+  displayOrder?: number;
+  rangeMin?: string | null;
+  rangeMax?: string | null;
+  minInclusive?: boolean;
+  maxInclusive?: boolean;
+  virtualPoolAmount?: string;
+};
+
+/**
+ * POST /api/v1/admin/markets 요청 (CreateMarketRequest). regionScope/regionSido/regionSigu는
+ * swagger.json에 없지만 market-service의 실제 CreateMarketRequest.java에는 존재한다(백엔드 소스 확인,
+ * swagger 재수출 필요). regionScope 정책:
+ * - NON_REGIONAL: regionSido/regionSigu 모두 null이어야 함
+ * - NATIONAL: regionSido는 null 또는 "전국"만 허용(서버가 "전국"으로 정규화), regionSigu는 null
+ * - REGIONAL: regionSido 필수(단 "전국" 불가), regionSigu는 선택
+ */
+export type CreateMarketRequest = {
+  title: string;
+  description?: string;
+  category: AdminMarketCategory;
+  answerType: MarketAnswerType;
+  metricUnit?: AdminMarketMetricUnit;
+  regionScope: MarketRegionScope;
+  regionSido?: string | null;
+  regionSigu?: string | null;
+  judgeDataSource: string;
+  judgeCriteria: string;
+  judgeDate: string;
+  closeAt: string;
+  settleDueAt?: string;
+  feeRate?: string;
+  createdBy: number;
+  options: CreateMarketOptionRequest[];
+};
+
+/**
+ * POST /api/v1/admin/markets 응답 (CreateMarketResponse.java 기준). swagger.json에는 marketId만 있고,
+ * 백엔드 소스 기준으로는 regionScope/regionSido/regionSigu도 내려준다. status 필드는 응답에 없다
+ * (생성 직후 항상 PENDING이므로 별도로 받지 않아도 됨).
+ */
+export type CreateMarketResponse = {
+  marketId: number;
+  regionScope: MarketRegionScope;
+  regionSido: string | null;
+  regionSigu: string | null;
+};
+
+/** PATCH /api/v1/admin/markets/{marketId}/activate 응답. */
+export type ActivateMarketResponse = {
+  marketId: number;
+  status: MarketStatus;
+};
+
 /** swagger.json AdminMarketOption 기준. Decimal 필드는 프로젝트 정책상 string으로 취급(§12). */
 export type AdminMarketOption = MarketOption & {
   optionCode?: string;
@@ -263,6 +326,42 @@ export type AdminMarketProblemListResponse = {
   totalElements: number;
   totalPages: number;
   last: boolean;
+};
+
+// ---- Market 댓글 (MARKET_API_SPEC.md §3-1) ----
+
+export type MarketCommentListParams = {
+  page?: number;
+  size?: number;
+};
+
+export type MarketComment = {
+  commentId: number;
+  marketId: number;
+  memberId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MarketCommentCreateRequest = {
+  content: string;
+};
+
+/** GET /api/v1/markets/{marketId}/comments 응답. number/first 필드는 쓰지 않는다(MARKET_API_SPEC.md §3-1 참고). */
+export type MarketCommentPageResponse = {
+  content: MarketComment[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+};
+
+/** DELETE /api/v1/markets/{marketId}/comments/{commentId} 응답. soft delete. */
+export type MarketCommentDeleteResponse = {
+  commentId: number;
+  deleted: boolean;
 };
 
 // ---- 관리자 정산/환불 조회 (swagger.json 기준, 2026-06 갱신) ----

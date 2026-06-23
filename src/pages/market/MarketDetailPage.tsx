@@ -1,21 +1,29 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { useMarketPublicDataReferenceQuery } from "@/entities/insight/model/useMarketPublicDataReferenceQuery";
 import type { MarketPublicDataReferenceResponse } from "@/entities/insight/model/insight.types";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
+import { useMarketCommentListQuery } from "@/entities/market/model/useMarketCommentListQuery";
 import type {
+  MarketComment,
   MarketDisplayStatus,
   MarketStatus,
 } from "@/entities/market/model/market.types";
 import { getOptionColorMap } from "@/entities/market/lib/optionColor";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
+import { MarketCommentList } from "@/entities/market/ui/MarketCommentList";
+import { MarketCommentPagination } from "@/entities/market/ui/MarketCommentPagination";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
 import { CreateMarketPredictionPanel } from "@/features/market-prediction/create/ui/CreateMarketPredictionPanel";
+import { MarketCommentForm } from "@/features/create-market-comment/ui/MarketCommentForm";
+import { DeleteMarketCommentButton } from "@/features/delete-market-comment/ui/DeleteMarketCommentButton";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
 import { MyMarketPredictionCard } from "@/entities/prediction/ui/MyMarketPredictionCard";
 import { isApiError } from "@/shared/api/apiError";
+import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { formatDate, formatDateTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
@@ -30,6 +38,8 @@ import { Skeleton } from "@/shared/ui/skeleton";
 export default function MarketDetailPage() {
   const { marketId } = useParams<{ marketId: string }>();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentMemberId = useAuthStore((state) => state.memberId);
+  const currentNickname = useAuthStore((state) => state.nickname);
   const isValidMarketId = marketId !== undefined && /^\d+$/.test(marketId);
   const parsedMarketId = isValidMarketId ? Number(marketId) : 0;
   const { data, error, isError, isLoading, refetch } =
@@ -151,6 +161,14 @@ export default function MarketDetailPage() {
                   </CardContent>
                 </Card>
               )}
+
+              <MarketCommentSection
+                marketId={data.marketId}
+                marketStatus={data.status}
+                isAuthenticated={isAuthenticated}
+                currentMemberId={currentMemberId}
+                currentNickname={currentNickname}
+              />
             </div>
 
             <aside className="lg:sticky lg:top-20">
@@ -276,6 +294,120 @@ function MyPredictionSection({
   );
 }
 
+const COMMENT_PAGE_SIZE = 10;
+
+type MarketCommentSectionProps = {
+  marketId: number;
+  marketStatus: MarketStatus;
+  isAuthenticated: boolean;
+  currentMemberId: number | null;
+  currentNickname: string | null;
+};
+
+function MarketCommentSection({
+  marketId,
+  marketStatus,
+  isAuthenticated,
+  currentMemberId,
+  currentNickname,
+}: MarketCommentSectionProps) {
+  const [page, setPage] = useState(0);
+
+  const { data, error, isError, isLoading, isFetching, refetch } =
+    useMarketCommentListQuery(marketId, { page, size: COMMENT_PAGE_SIZE });
+
+  function handleCommentDeleted() {
+    // 마지막 남은 댓글을 지운 page라면 이전 page로 이동해 빈 화면을 피한다.
+    if (data && data.content.length === 1 && page > 0) {
+      setPage((prev) => prev - 1);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>댓글</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <MarketCommentForm
+          marketId={marketId}
+          marketStatus={marketStatus}
+          isAuthenticated={isAuthenticated}
+          unauthenticatedFallback={<CommentLoginRequired />}
+        />
+
+        {isLoading && (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {isError && (
+          <ErrorState
+            title="댓글을 불러오지 못했습니다"
+            message={
+              isApiError(error)
+                ? error.message
+                : "댓글을 불러오는 중 문제가 발생했습니다."
+            }
+            action={<Button onClick={() => refetch()}>다시 시도</Button>}
+          />
+        )}
+
+        {data && data.content.length === 0 && (
+          <EmptyState
+            title="아직 댓글이 없습니다"
+            description="가장 먼저 의견을 남겨보세요."
+          />
+        )}
+
+        {data && data.content.length > 0 && (
+          <>
+            <MarketCommentList
+              comments={data.content}
+              currentMemberId={currentMemberId}
+              currentNickname={currentNickname}
+              renderDeleteSlot={(comment: MarketComment) => (
+                <DeleteMarketCommentButton
+                  marketId={marketId}
+                  commentId={comment.commentId}
+                  onDeleted={handleCommentDeleted}
+                />
+              )}
+            />
+
+            <MarketCommentPagination
+              page={page}
+              totalPages={data.totalPages}
+              isFetching={isFetching}
+              onPrev={() => setPage((prev) => Math.max(prev - 1, 0))}
+              onNext={() => setPage((prev) => prev + 1)}
+            />
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CommentLoginRequired() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
+      <p className="text-sm text-muted-foreground">
+        댓글을 작성하려면 로그인이 필요합니다.
+      </p>
+      <Button render={<Link to={ROUTE_PATH.LOGIN} />} variant="outline" size="sm">
+        로그인하기
+      </Button>
+    </div>
+  );
+}
+
 function hasDevMemberId() {
   return Boolean(import.meta.env.DEV && import.meta.env.VITE_DEV_MEMBER_ID);
 }
@@ -286,18 +418,18 @@ function PublicDataReferenceSection({ marketId }: { marketId: number }) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-b from-blue-50/60 to-white">
-      {/* 헤더 */}
       <div className="flex items-center gap-2 border-b border-blue-100 bg-blue-50 px-4 py-3">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-[11px] font-bold text-white">
           AI
         </span>
         <div>
           <p className="text-sm font-semibold text-blue-900">AI 시장 참고 정보</p>
-          <p className="text-[11px] text-blue-500">공공 데이터 기반 분석 · 투자 조언이 아닙니다</p>
+          <p className="text-[11px] text-blue-500">
+            공공 데이터 기반 분석 · 투자 조언이 아닙니다
+          </p>
         </div>
       </div>
 
-      {/* 본문 */}
       <div className="px-4 py-4">
         {isLoading && (
           <div className="space-y-3">
@@ -318,7 +450,11 @@ function PublicDataReferenceSection({ marketId }: { marketId: number }) {
         {isError && (
           <ErrorState
             message="참고 정보를 불러오는 중 문제가 발생했습니다."
-            action={<Button variant="outline" size="sm" onClick={() => refetch()}>다시 시도</Button>}
+            action={
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                다시 시도
+              </Button>
+            }
           />
         )}
 
@@ -333,7 +469,6 @@ function PublicDataReferenceContent({
 }: {
   data: MarketPublicDataReferenceResponse;
 }) {
-  // 공공 데이터 자체 없음
   if (!data.aiAnalyzed && data.dataAsOf === null) {
     return (
       <p className="py-4 text-center text-sm text-muted-foreground">
@@ -344,7 +479,6 @@ function PublicDataReferenceContent({
 
   return (
     <div className="space-y-3">
-      {/* 제목 + 기준일 */}
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-slate-800">{data.title}</p>
         {data.dataAsOf && (
@@ -354,31 +488,34 @@ function PublicDataReferenceContent({
         )}
       </div>
 
-      {/* Claude 실패 시 안내 배너 */}
       {!data.aiAnalyzed && (
         <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          AI 분석을 일시적으로 이용할 수 없습니다. 공공 데이터 원문을 직접 참고해 주세요.
+          AI 분석을 일시적으로 이용할 수 없습니다. 공공 데이터 원문을 직접
+          참고해 주세요.
         </div>
       )}
 
-      {/* AI 요약 — 하이라이트 박스 */}
       {data.aiAnalyzed && (
         <div className="rounded-lg border-l-4 border-blue-400 bg-blue-50 px-4 py-3">
-          <p className="text-xs font-semibold text-blue-600 mb-1">AI 요약</p>
+          <p className="mb-1 text-xs font-semibold text-blue-600">AI 요약</p>
           <p className="text-sm leading-relaxed text-slate-700">{data.summary}</p>
         </div>
       )}
 
-      {/* 상세 내용 — 드롭다운 */}
       <details className="group">
-        <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600">
           <svg
             className="h-3.5 w-3.5 transition-transform group-open:rotate-90"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
           </svg>
           상세 데이터 보기
         </summary>

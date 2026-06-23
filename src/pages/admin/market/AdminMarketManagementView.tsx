@@ -8,6 +8,7 @@ import {
 import { getAdminMarketErrorMessage } from "@/entities/market/lib/adminMarketErrorMessage";
 import { DISPLAY_STATUS_BADGE } from "@/entities/market/lib/marketDisplayStatusBadge";
 import { matchNumericRangeOption } from "@/entities/market/lib/matchNumericRangeOption";
+import { useActivateMarketMutation } from "@/entities/market/model/useActivateMarketMutation";
 import { useAdminMarketDetailQuery } from "@/entities/market/model/useAdminMarketDetailQuery";
 import { useAdminMarketRefundDetailListQuery } from "@/entities/market/model/useAdminMarketRefundDetailListQuery";
 import { useAdminMarketRefundSummaryQuery } from "@/entities/market/model/useAdminMarketRefundSummaryQuery";
@@ -101,11 +102,65 @@ export function AdminMarketManagementView({
   return (
     <div className="space-y-6">
       <MarketOverviewCard market={market} />
+      {market.status === "PENDING" && <ActivateCard marketId={marketId} />}
       <ResultConfirmCard marketId={marketId} market={market} />
       <SettlementCard marketId={marketId} market={market} />
       {canVoid && <VoidCard marketId={marketId} />}
       {market.status === "VOIDED" && <RefundCard marketId={marketId} />}
     </div>
+  );
+}
+
+/** PENDING Market을 ACTIVE로 전환. 활성화 후에는 사용자가 즉시 예측에 참여할 수 있다. */
+function ActivateCard({ marketId }: { marketId: number }) {
+  const mutation = useActivateMarketMutation();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  function handleActivate() {
+    mutation.mutate(marketId, {
+      onSuccess: () => {
+        toast.success("마켓이 활성화되었습니다.");
+        setConfirmOpen(false);
+      },
+      onError: (error) => {
+        toast.error(getAdminMarketErrorMessage(toApiError(error)));
+        setConfirmOpen(false);
+      },
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>마켓 활성화</CardTitle>
+        <CardDescription>
+          PENDING 상태인 마켓을 ACTIVE로 전환하면 사용자가 예측에 참여할 수 있습니다.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <Button className="w-full" onClick={() => setConfirmOpen(true)}>
+            마켓 활성화
+          </Button>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>마켓을 활성화하시겠습니까?</DialogTitle>
+              <DialogDescription>
+                활성화하면 사용자가 즉시 예측에 참여할 수 있게 됩니다.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                취소
+              </Button>
+              <Button onClick={handleActivate} disabled={mutation.isPending}>
+                활성화합니다
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
 
