@@ -99,35 +99,30 @@ export function BattleVotePanel({
   const isActive = status === "ACTIVE";
   const canVote = isActive && !notStarted && !result.voted;
 
-  // 1) 이미 투표한 경우 → 결과 공개
-  if (result.voted) {
+  // 1) ACTIVE + 이미 투표한 경우 → 종료 후 결과 공개 (익명 투표)
+  if (result.voted && status === "ACTIVE") {
     return (
-      <div className="space-y-4">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
-          <CheckCircle2 className="size-4" />
+      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 py-8 text-center">
+        <CheckCircle2 className="size-6 text-emerald-600" />
+        <p className="text-sm font-medium text-emerald-700">
           투표에 참여하셨습니다.
         </p>
-        <BattleVoteResult
-          optionALabel={optionA}
-          optionBLabel={optionB}
-          result={result}
-        />
+        <p className="text-xs text-muted-foreground">
+          배틀이 종료된 후 결과를 확인할 수 있습니다.
+        </p>
       </div>
     );
   }
 
   // 2) 종료된 배틀
   if (status === "CLOSED") {
-    if (result.resultVisible) {
-      return (
-        <BattleVoteResult
-          optionALabel={optionA}
-          optionBLabel={optionB}
-          result={result}
-        />
-      );
-    }
-    return (
+    const resultContent = result.resultVisible ? (
+      <BattleVoteResult
+        optionALabel={optionA}
+        optionBLabel={optionB}
+        result={result}
+      />
+    ) : (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 py-8 text-center">
         <Lock className="size-6 text-muted-foreground/70" />
         <p className="text-sm text-muted-foreground">
@@ -135,6 +130,19 @@ export function BattleVotePanel({
         </p>
       </div>
     );
+
+    if (result.voted) {
+      return (
+        <div className="space-y-4">
+          <p className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+            <CheckCircle2 className="size-4" />
+            투표에 참여하셨습니다.
+          </p>
+          {resultContent}
+        </div>
+      );
+    }
+    return resultContent;
   }
 
   // 3) 진행 중이지만 아직 시작 전

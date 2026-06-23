@@ -134,10 +134,12 @@ export default function BattleDetailPage() {
               {region}
             </span>
           )}
-          <span className="inline-flex items-center gap-1">
-            <Users className="size-4" />
-            {battle.voteCount.toLocaleString()}명 참여
-          </span>
+          {battle.status === "CLOSED" && (
+            <span className="inline-flex items-center gap-1">
+              <Users className="size-4" />
+              {battle.voteCount.toLocaleString()}명 참여
+            </span>
+          )}
           <span className="inline-flex items-center gap-1">
             <CalendarDays className="size-4" />
             {formatDateTime(battle.startAt)} ~ {formatDateTime(battle.endAt)}
