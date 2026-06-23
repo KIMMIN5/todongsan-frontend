@@ -134,6 +134,7 @@ export type CreateBattleResponse = {
 
 export type BattleListParams = {
   status?: BattleListStatus;
+  sort?: "popular";
   page?: number;
   size?: number;
 };
