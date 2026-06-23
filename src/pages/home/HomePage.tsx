@@ -3,6 +3,8 @@ import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { isApiError } from "@/shared/api/apiError";
 import { useMarketListQuery } from "@/entities/market/model/useMarketListQuery";
 import type { MarketListParams } from "@/entities/market/model/market.types";
+import { useBattleListQuery } from "@/entities/battle/model/useBattleListQuery";
+import type { BattleSummary, BattleListParams } from "@/entities/battle/model/battle.types";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -22,36 +24,24 @@ const POPULAR_MARKET_PARAMS: MarketListParams = {
   size: 6,
 };
 
-const trendingBattles = [
-  {
-    id: "b-1",
-    title: "실거주로 더 선호하는 단지는?",
-    optionA: "마포 래미안 푸르지오",
-    optionB: "송파 헬리오시티",
-    votes: 342,
-    comments: 48,
-  },
-  {
-    id: "b-2",
-    title: "역세권 vs 학군, 더 중요한 조건은?",
-    optionA: "초역세권 (도보 3분)",
-    optionB: "명문 학군지 (도보 15분)",
-    votes: 512,
-    comments: 89,
-  },
-  {
-    id: "b-3",
-    title: "신축 아파트 vs 구축 대단지, 당신의 선택은?",
-    optionA: "신축 준식형 (24평)",
-    optionB: "구축 대단지 리모델링 (34평)",
-    votes: 289,
-    comments: 31,
-  },
-];
+// 실시간 뜨거운 배틀: 진행 중(ACTIVE) 투표 수 내림차순 3개
+const TRENDING_BATTLE_PARAMS: BattleListParams = {
+  status: "ACTIVE",
+  sort: "popular",
+  page: 0,
+  size: 3,
+};
 
 export function HomePage() {
   const { data, error, isError, isLoading, refetch } =
     useMarketListQuery(POPULAR_MARKET_PARAMS);
+
+  const {
+    data: battleData,
+    isError: isBattleError,
+    isLoading: isBattleLoading,
+    refetch: refetchBattle,
+  } = useBattleListQuery(TRENDING_BATTLE_PARAMS);
 
   const popularErrorMessage = isApiError(error)
     ? error.message
@@ -155,38 +145,96 @@ export function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {trendingBattles.map((battle) => (
-            <Card key={battle.id} className="rounded-2xl border-slate-200 bg-white hover:shadow-md transition-shadow flex flex-col justify-between">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900 line-clamp-1">
-                  {battle.title}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  현재 {battle.votes}명이 투표에 동참했습니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-0">
-                <div className="space-y-2">
-                  <div className="relative flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium hover:bg-slate-50 cursor-pointer transition-colors bg-white">
-                    <span className="text-slate-800 font-semibold truncate max-w-[80%]">{battle.optionA}</span>
-                    <span className="text-emerald-600 font-bold">A</span>
-                  </div>
-                  <div className="relative flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium hover:bg-slate-50 cursor-pointer transition-colors bg-white">
-                    <span className="text-slate-800 font-semibold truncate max-w-[80%]">{battle.optionB}</span>
-                    <span className="text-emerald-600 font-bold">B</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-slate-400 border-t border-slate-100 pt-3">
-                  <span>투표 {battle.votes}</span>
-                  <span>댓글 {battle.comments}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {isBattleLoading && <TrendingBattlesSkeleton />}
+
+        {isBattleError && (
+          <ErrorState
+            message="배틀 목록을 불러오는 중 문제가 발생했습니다."
+            action={<Button onClick={() => refetchBattle()}>다시 시도</Button>}
+          />
+        )}
+
+        {!isBattleLoading && !isBattleError && battleData && battleData.content.length === 0 && (
+          <EmptyState
+            title="진행 중인 배틀이 없습니다"
+            description="새로운 배틀이 시작되면 이곳에 표시됩니다."
+          />
+        )}
+
+        {!isBattleLoading && !isBattleError && battleData && battleData.content.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-3">
+            {battleData.content.map((battle) => (
+              <TrendingBattleCard key={battle.battleId} battle={battle} />
+            ))}
+          </div>
+        )}
       </section>
     </PageContainer>
+  );
+}
+
+type TrendingBattleCardProps = {
+  battle: BattleSummary;
+};
+
+function TrendingBattleCard({ battle }: TrendingBattleCardProps) {
+  return (
+    <Link to={`/battles/${battle.battleId}`} className="block group">
+      <Card className="h-full rounded-2xl border-slate-200 bg-white transition-shadow group-hover:shadow-md flex flex-col justify-between">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-slate-900 line-clamp-2">
+            {battle.title}
+          </CardTitle>
+          <CardDescription className="text-xs">
+            현재 {battle.voteCount.toLocaleString()}명이 투표에 동참했습니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-0">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium bg-white">
+              <span className="text-slate-800 font-semibold truncate max-w-[80%]">
+                {battle.optionA}
+              </span>
+              <span className="text-emerald-600 font-bold">A</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium bg-white">
+              <span className="text-slate-800 font-semibold truncate max-w-[80%]">
+                {battle.optionB}
+              </span>
+              <span className="text-sky-600 font-bold">B</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-[11px] text-slate-400 border-t border-slate-100 pt-3">
+            <span>투표 {battle.voteCount.toLocaleString()}</span>
+            {battle.commentCount != null && (
+              <span>댓글 {battle.commentCount.toLocaleString()}</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function TrendingBattlesSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3"
+        >
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+          <div className="space-y-2 pt-1">
+            <Skeleton className="h-9 w-full rounded-lg" />
+            <Skeleton className="h-9 w-full rounded-lg" />
+          </div>
+          <Skeleton className="h-3 w-1/3 mt-2" />
+        </div>
+      ))}
+    </div>
   );
 }
 
