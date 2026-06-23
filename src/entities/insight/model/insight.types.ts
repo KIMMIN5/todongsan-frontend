@@ -105,7 +105,7 @@ export interface MarketInsightData extends AnalysisData {
   };
 }
 
-// 배틀 인사이트 전용 데이터  
+// 배틀 인사이트 전용 데이터
 export interface BattleInsightData extends AnalysisData {
   voteAnalysis: {
     optionAPercentage: number;
@@ -123,3 +123,26 @@ export interface BattleInsightData extends AnalysisData {
     commentAnalysis?: string;
   };
 }
+
+// ── 마켓 실거래가 인사이트 ──────────────────────────────────────────
+
+export type MarketPriceDataType = "WEEKLY_PRICE_INDEX" | "MONTHLY_PRICE_INDEX";
+
+export type MarketPriceHistoryItem = {
+  referenceDate: string; // "2024-10-07"
+  value: number;
+};
+
+export type MarketPredictionDistributionItem = {
+  optionLabel: string;
+  ratio: number;   // 0~1
+  isResult: boolean;
+};
+
+export type AdminMarketInsightPriceHistory = {
+  regionSido: string | null;
+  regionSigu: string | null;
+  dataType: MarketPriceDataType;
+  priceHistory: MarketPriceHistoryItem[];
+  latestPredictionDistribution: MarketPredictionDistributionItem[];
+};

@@ -2,6 +2,7 @@ import type { ApiResponse } from "@/shared/api/apiResponse";
 import { httpClient } from "@/shared/api/httpClient";
 
 import type {
+  AdminMarketInsightPriceHistory,
   InsightReport,
   InsightReportStatusInfo,
 } from "../model/insight.types";
@@ -117,5 +118,16 @@ export async function getBattleInsightReportStatus(
     `/api/v1/insights/battles/${battleId}/report/status`,
   );
 
+  return response.data.data;
+}
+
+// ── 관리자 마켓 실거래가 인사이트 ──────────────────────────────────
+
+export async function getAdminMarketInsightPriceHistory(
+  marketId: number,
+): Promise<AdminMarketInsightPriceHistory> {
+  const response = await httpClient.get<ApiResponse<AdminMarketInsightPriceHistory>>(
+    `/api/v1/admin/insights/markets/${marketId}/price-history`,
+  );
   return response.data.data;
 }
