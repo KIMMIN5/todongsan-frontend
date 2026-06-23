@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, Lock } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 
 import { isApiError } from "@/shared/api/apiError";
 import { formatDateTime } from "@/shared/lib/formatDate";
@@ -114,21 +114,14 @@ export function BattleVotePanel({
     );
   }
 
-  // 2) 종료된 배틀
+  // 2) 종료된 배틀 → 즉시 결과 공개
   if (status === "CLOSED") {
-    const resultContent = result.resultVisible ? (
+    const resultContent = (
       <BattleVoteResult
         optionALabel={optionA}
         optionBLabel={optionB}
         result={result}
       />
-    ) : (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 py-8 text-center">
-        <Lock className="size-6 text-muted-foreground/70" />
-        <p className="text-sm text-muted-foreground">
-          {result.message ?? "투표 종료 72시간 후 결과가 공개됩니다."}
-        </p>
-      </div>
     );
 
     if (result.voted) {
