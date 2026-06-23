@@ -345,10 +345,12 @@ function PublicDataReferenceContent({
   return (
     <div className="space-y-3">
       {/* 제목 + 기준일 */}
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-slate-800">{data.title}</p>
+      <div className="flex flex-col gap-1.5">
+        <p className="min-w-0 break-keep text-sm font-semibold text-slate-800 leading-snug">
+          {data.title}
+        </p>
         {data.dataAsOf && (
-          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-600">
+          <span className="w-fit rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-600">
             {formatDate(data.dataAsOf)} 기준
           </span>
         )}

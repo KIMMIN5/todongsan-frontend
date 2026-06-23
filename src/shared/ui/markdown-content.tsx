@@ -8,7 +8,7 @@ type Props = {
 
 export function MarkdownContent({ content, className }: Props) {
   return (
-    <div className={className}>
+    <div className={`min-w-0 w-full${className ? ` ${className}` : ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -78,8 +78,8 @@ export function MarkdownContent({ content, className }: Props) {
           ),
           hr: () => <hr className="my-4 border-border" />,
           table: ({ children }) => (
-            <div className="mb-3 overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-sm">{children}</table>
+            <div className="mb-3 w-full min-w-0 overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[320px] text-sm">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
