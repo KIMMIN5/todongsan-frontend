@@ -129,6 +129,7 @@ export async function getMarketPublicDataReference(
 ): Promise<MarketPublicDataReferenceResponse> {
   const response = await httpClient.get<ApiResponse<MarketPublicDataReferenceResponse>>(
     `/api/v1/insights/markets/${marketId}/public-data-reference`,
+    { timeout: 60000 }, // Claude API 응답 최대 60초 허용
   );
   return response.data.data;
 }

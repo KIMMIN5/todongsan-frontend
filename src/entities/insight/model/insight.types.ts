@@ -129,8 +129,9 @@ export interface BattleInsightData extends AnalysisData {
 export type MarketPublicDataReferenceResponse = {
   title: string;
   summary: string;
-  content: string;       // Markdown
-  dataAsOf: string | null; // ISO 8601, 공공 데이터 없으면 null
+  content: string;          // Markdown
+  dataAsOf: string | null;  // ISO 8601, 공공 데이터 없으면 null
+  aiAnalyzed: boolean;      // false = Claude 실패(공공 데이터 원문) 또는 공공 데이터 없음
 };
 
 // ── 마켓 실거래가 인사이트 ──────────────────────────────────────────
