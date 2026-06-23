@@ -5,6 +5,7 @@ import type {
   AdminMarketInsightPriceHistory,
   InsightReport,
   InsightReportStatusInfo,
+  MarketPublicDataReferenceResponse,
 } from "../model/insight.types";
 
 // Claude 출력이 "title: ...\n\nsummary: ...\n\ncontent: |\n  ..." 형식으로
@@ -118,6 +119,17 @@ export async function getBattleInsightReportStatus(
     `/api/v1/insights/battles/${battleId}/report/status`,
   );
 
+  return response.data.data;
+}
+
+// ── 마켓 공공 데이터 참고 정보 ──────────────────────────────────────
+
+export async function getMarketPublicDataReference(
+  marketId: number,
+): Promise<MarketPublicDataReferenceResponse> {
+  const response = await httpClient.get<ApiResponse<MarketPublicDataReferenceResponse>>(
+    `/api/v1/insights/markets/${marketId}/public-data-reference`,
+  );
   return response.data.data;
 }
 

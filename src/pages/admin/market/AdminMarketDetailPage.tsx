@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useParams } from "react-router-dom";
 import {
   CartesianGrid,
@@ -58,7 +59,7 @@ export default function AdminMarketDetailPage() {
 }
 
 function MarketAnalysisTab({ marketId }: { marketId: number }) {
-  const { data, isLoading, isError, refetch } =
+  const { data, isLoading, isError, error, refetch } =
     useAdminMarketInsightPriceHistoryQuery(marketId);
 
   if (isLoading) {
@@ -71,6 +72,15 @@ function MarketAnalysisTab({ marketId }: { marketId: number }) {
   }
 
   if (isError) {
+    // 404 = 해당 마켓의 실거래가 데이터 없음 → 빈 상태로 안내
+    const is404 = axios.isAxiosError(error) && error.response?.status === 404;
+    if (is404) {
+      return (
+        <p className="py-12 text-center text-sm text-muted-foreground">
+          이 마켓의 실거래가 분석 데이터가 아직 없습니다.
+        </p>
+      );
+    }
     return (
       <ErrorState
         message="분석 데이터를 불러오는 중 문제가 발생했습니다."

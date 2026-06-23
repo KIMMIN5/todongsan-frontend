@@ -1,6 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 
 import { useAuthStore } from "@/entities/auth/model/auth.store";
+import { useMarketPublicDataReferenceQuery } from "@/entities/insight/model/useMarketPublicDataReferenceQuery";
+import type { MarketPublicDataReferenceResponse } from "@/entities/insight/model/insight.types";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
 import type {
   MarketDisplayStatus,
@@ -14,12 +16,13 @@ import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
 import { MyMarketPredictionCard } from "@/entities/prediction/ui/MyMarketPredictionCard";
 import { isApiError } from "@/shared/api/apiError";
-import { formatDateTime } from "@/shared/lib/formatDate";
+import { formatDate, formatDateTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
+import { MarkdownContent } from "@/shared/ui/markdown-content";
 import { PageContainer } from "@/shared/ui/page-container";
 import { PageHeader } from "@/shared/ui/page-header";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -117,6 +120,10 @@ export default function MarketDetailPage() {
                 marketId={data.marketId}
                 options={data.options}
               />
+
+              {data.displayStatus === "ACTIVE" && (
+                <PublicDataReferenceSection marketId={data.marketId} />
+              )}
 
               <MyPredictionSection
                 marketId={data.marketId}
@@ -271,6 +278,64 @@ function MyPredictionSection({
 
 function hasDevMemberId() {
   return Boolean(import.meta.env.DEV && import.meta.env.VITE_DEV_MEMBER_ID);
+}
+
+function PublicDataReferenceSection({ marketId }: { marketId: number }) {
+  const { data, isLoading, isError, refetch } =
+    useMarketPublicDataReferenceQuery(marketId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>AI 시장 참고 정보</CardTitle>
+        <CardDescription>
+          공공 데이터 기반 AI 분석 · 투자 조언이 아닙니다
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading && (
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        )}
+
+        {isError && (
+          <ErrorState
+            message="참고 정보를 불러오는 중 문제가 발생했습니다."
+            action={<Button variant="outline" size="sm" onClick={() => refetch()}>다시 시도</Button>}
+          />
+        )}
+
+        {data && <PublicDataReferenceContent data={data} />}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PublicDataReferenceContent({
+  data,
+}: {
+  data: MarketPublicDataReferenceResponse;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm font-semibold text-foreground">{data.title}</p>
+        {data.dataAsOf && (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            기준일: {formatDate(data.dataAsOf)}
+          </p>
+        )}
+      </div>
+
+      <p className="text-sm text-muted-foreground leading-relaxed">{data.summary}</p>
+
+      <MarkdownContent content={data.content} />
+    </div>
+  );
 }
 
 function isReportAvailable(displayStatus: MarketDisplayStatus): boolean {
