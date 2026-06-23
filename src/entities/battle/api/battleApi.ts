@@ -2,6 +2,7 @@ import type { ApiResponse } from "@/shared/api/apiResponse";
 import { httpClient } from "@/shared/api/httpClient";
 
 import type {
+  AdminBattleStatusResponse,
   BattleComment,
   BattleCommentListParams,
   BattleDetail,
@@ -140,6 +141,17 @@ export async function createBattleComment(
   const response = await httpClient.post<ApiResponse<BattleComment>>(
     `/api/v1/battles/${battleId}/comments`,
     request,
+  );
+
+  return response.data.data;
+}
+
+// PATCH /api/v1/battles/{battleId}/cancel (인증 필요, 본인 PENDING 배틀만)
+export async function cancelMyBattle(
+  battleId: number,
+): Promise<AdminBattleStatusResponse> {
+  const response = await httpClient.patch<ApiResponse<AdminBattleStatusResponse>>(
+    `/api/v1/battles/${battleId}/cancel`,
   );
 
   return response.data.data;

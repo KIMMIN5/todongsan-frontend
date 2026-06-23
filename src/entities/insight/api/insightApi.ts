@@ -2,6 +2,7 @@ import type { ApiResponse } from "@/shared/api/apiResponse";
 import { httpClient } from "@/shared/api/httpClient";
 
 import type {
+  AdminMarketInsightPriceHistory,
   InsightReport,
   InsightReportStatusInfo,
   MarketPublicDataReferenceResponse,
@@ -121,13 +122,25 @@ export async function getBattleInsightReportStatus(
   return response.data.data;
 }
 
+// ── 마켓 공공 데이터 참고 정보 ──────────────────────────────────────
+
 export async function getMarketPublicDataReference(
   marketId: number,
 ): Promise<MarketPublicDataReferenceResponse> {
   const response = await httpClient.get<ApiResponse<MarketPublicDataReferenceResponse>>(
     `/api/v1/insights/markets/${marketId}/public-data-reference`,
-    { timeout: 60000 },
+    { timeout: 60000 }, // Claude API 응답 최대 60초 허용
   );
+  return response.data.data;
+}
 
+// ── 관리자 마켓 실거래가 인사이트 ──────────────────────────────────
+
+export async function getAdminMarketInsightPriceHistory(
+  marketId: number,
+): Promise<AdminMarketInsightPriceHistory> {
+  const response = await httpClient.get<ApiResponse<AdminMarketInsightPriceHistory>>(
+    `/api/v1/admin/insights/markets/${marketId}/price-history`,
+  );
   return response.data.data;
 }

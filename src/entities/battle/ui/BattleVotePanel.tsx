@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, Lock } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 
 import { isApiError } from "@/shared/api/apiError";
 import { formatDateTime } from "@/shared/lib/formatDate";
@@ -99,42 +99,43 @@ export function BattleVotePanel({
   const isActive = status === "ACTIVE";
   const canVote = isActive && !notStarted && !result.voted;
 
-  // 1) 이미 투표한 경우 → 결과 공개
-  if (result.voted) {
+  // 1) ACTIVE + 이미 투표한 경우 → 종료 후 결과 공개 (익명 투표)
+  if (result.voted && status === "ACTIVE") {
     return (
-      <div className="space-y-4">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
-          <CheckCircle2 className="size-4" />
+      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 py-8 text-center">
+        <CheckCircle2 className="size-6 text-emerald-600" />
+        <p className="text-sm font-medium text-emerald-700">
           투표에 참여하셨습니다.
         </p>
-        <BattleVoteResult
-          optionALabel={optionA}
-          optionBLabel={optionB}
-          result={result}
-        />
+        <p className="text-xs text-muted-foreground">
+          배틀이 종료된 후 결과를 확인할 수 있습니다.
+        </p>
       </div>
     );
   }
 
-  // 2) 종료된 배틀
+  // 2) 종료된 배틀 → 즉시 결과 공개
   if (status === "CLOSED") {
-    if (result.resultVisible) {
+    const resultContent = (
+      <BattleVoteResult
+        optionALabel={optionA}
+        optionBLabel={optionB}
+        result={result}
+      />
+    );
+
+    if (result.voted) {
       return (
-        <BattleVoteResult
-          optionALabel={optionA}
-          optionBLabel={optionB}
-          result={result}
-        />
+        <div className="space-y-4">
+          <p className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+            <CheckCircle2 className="size-4" />
+            투표에 참여하셨습니다.
+          </p>
+          {resultContent}
+        </div>
       );
     }
-    return (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 py-8 text-center">
-        <Lock className="size-6 text-muted-foreground/70" />
-        <p className="text-sm text-muted-foreground">
-          {result.message ?? "투표 종료 72시간 후 결과가 공개됩니다."}
-        </p>
-      </div>
-    );
+    return resultContent;
   }
 
   // 3) 진행 중이지만 아직 시작 전

@@ -15,10 +15,7 @@ export function BattleCard({ battle }: BattleCardProps) {
   return (
     <Card className="h-full transition-shadow hover:shadow-md">
       <CardHeader className="gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-medium text-muted-foreground">
-            #{battle.battleId}
-          </span>
+        <div className="flex items-center justify-end gap-3">
           <BattleStatusBadge status={battle.status} />
         </div>
         <CardTitle className="line-clamp-2 min-h-11 text-base font-semibold">

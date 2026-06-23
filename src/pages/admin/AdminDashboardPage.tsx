@@ -15,6 +15,17 @@ import { PageHeader } from "@/shared/ui/page-header";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Button } from "@/shared/ui/button";
 
+const MARKET_STATUS_CONFIG = [
+  { key: "pending",              label: "승인 대기"       },
+  { key: "active",               label: "진행 중"         },
+  { key: "closedByTime",         label: "시간 마감"       },
+  { key: "closed",               label: "마감됨"          },
+  { key: "dataPending",          label: "데이터 수집 대기" },
+  { key: "settlementInProgress", label: "정산 진행 중"    },
+  { key: "settled",              label: "정산 완료"       },
+  { key: "voided",               label: "무효 처리"       },
+] as const;
+
 export function AdminDashboardPage() {
   const { data: marketCounts, isLoading, isError, refetch } = useAdminMarketStatusCountsQuery();
 
@@ -49,25 +60,50 @@ export function AdminDashboardPage() {
                   재시도
                 </Button>
               </div>
-            ) : (
-              <div className="rounded-lg bg-slate-50 p-4 space-y-2">
-                <div className="flex justify-between items-center text-xs font-semibold">
-                  <span className="text-slate-600">진행 중인 마켓</span>
-                  {isLoading ? (
-                    <Skeleton className="h-4 w-10" />
-                  ) : (
-                    <span className="text-slate-900">{marketCounts?.active}개</span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center text-xs font-semibold">
-                  <span className="text-slate-600">결과 대기 중인 마켓</span>
-                  {isLoading ? (
-                    <Skeleton className="h-4 w-10" />
-                  ) : (
-                    <span className="text-slate-900">{marketCounts?.closedByTime}개</span>
-                  )}
-                </div>
+            ) : isLoading ? (
+              <div className="rounded-lg bg-slate-50 p-4 space-y-2.5">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-20 shrink-0" />
+                    <Skeleton className="h-3 flex-1" />
+                    <Skeleton className="h-3 w-6 shrink-0" />
+                  </div>
+                ))}
               </div>
+            ) : (
+              (() => {
+                const rows = MARKET_STATUS_CONFIG.filter(
+                  ({ key }) => (marketCounts?.[key] ?? 0) > 0
+                );
+                const maxCount = rows.length > 0
+                  ? Math.max(...rows.map(({ key }) => marketCounts![key]))
+                  : 0;
+                return (
+                  <div className="rounded-lg bg-slate-50 p-4 space-y-2">
+                    {rows.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-2">마켓이 없습니다</p>
+                    ) : (
+                      rows.map(({ key, label }) => {
+                        const count = marketCounts![key];
+                        const pct = Math.round((count / maxCount) * 100);
+                        const isMax = count === maxCount;
+                        return (
+                          <div key={key} className="flex items-center gap-2">
+                            <span className="w-32 shrink-0 text-xs text-slate-600 font-medium truncate">{label}</span>
+                            <div className="flex-1 bg-slate-100 rounded h-3 overflow-hidden">
+                              <div
+                                className={`${isMax ? "bg-slate-800" : "bg-slate-300"} h-full rounded transition-all duration-300`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="w-8 shrink-0 text-xs text-right font-semibold text-slate-700">{count}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                );
+              })()
             )}
             <Button
               className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 text-xs"
