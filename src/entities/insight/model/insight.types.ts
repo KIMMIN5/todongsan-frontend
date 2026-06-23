@@ -124,6 +124,16 @@ export interface BattleInsightData extends AnalysisData {
   };
 }
 
+// ── 마켓 공공 데이터 참고 정보 (진행 중 마켓 사용자 노출용) ──────────
+
+export type MarketPublicDataReferenceResponse = {
+  title: string;
+  summary: string;
+  content: string;          // Markdown
+  dataAsOf: string | null;  // ISO 8601, 공공 데이터 없으면 null
+  aiAnalyzed: boolean;      // false = Claude 실패(공공 데이터 원문) 또는 공공 데이터 없음
+};
+
 // ── 마켓 실거래가 인사이트 ──────────────────────────────────────────
 
 export type MarketPriceDataType = "WEEKLY_PRICE_INDEX" | "MONTHLY_PRICE_INDEX";

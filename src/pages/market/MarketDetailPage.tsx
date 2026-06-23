@@ -1,6 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 
 import { useAuthStore } from "@/entities/auth/model/auth.store";
+import { useMarketPublicDataReferenceQuery } from "@/entities/insight/model/useMarketPublicDataReferenceQuery";
+import type { MarketPublicDataReferenceResponse } from "@/entities/insight/model/insight.types";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
 import type {
   MarketDisplayStatus,
@@ -14,12 +16,13 @@ import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
 import { MyMarketPredictionCard } from "@/entities/prediction/ui/MyMarketPredictionCard";
 import { isApiError } from "@/shared/api/apiError";
-import { formatDateTime } from "@/shared/lib/formatDate";
+import { formatDate, formatDateTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
+import { MarkdownContent } from "@/shared/ui/markdown-content";
 import { PageContainer } from "@/shared/ui/page-container";
 import { PageHeader } from "@/shared/ui/page-header";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -117,6 +120,10 @@ export default function MarketDetailPage() {
                 marketId={data.marketId}
                 options={data.options}
               />
+
+              {data.displayStatus === "ACTIVE" && (
+                <PublicDataReferenceSection marketId={data.marketId} />
+              )}
 
               <MyPredictionSection
                 marketId={data.marketId}
@@ -271,6 +278,116 @@ function MyPredictionSection({
 
 function hasDevMemberId() {
   return Boolean(import.meta.env.DEV && import.meta.env.VITE_DEV_MEMBER_ID);
+}
+
+function PublicDataReferenceSection({ marketId }: { marketId: number }) {
+  const { data, isLoading, isError, refetch } =
+    useMarketPublicDataReferenceQuery(marketId);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-blue-100 bg-gradient-to-b from-blue-50/60 to-white">
+      {/* 헤더 */}
+      <div className="flex items-center gap-2 border-b border-blue-100 bg-blue-50 px-4 py-3">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-[11px] font-bold text-white">
+          AI
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-blue-900">AI 시장 참고 정보</p>
+          <p className="text-[11px] text-blue-500">공공 데이터 기반 분석 · 투자 조언이 아닙니다</p>
+        </div>
+      </div>
+
+      {/* 본문 */}
+      <div className="px-4 py-4">
+        {isLoading && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs text-blue-500">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-400" />
+              AI가 공공 데이터를 분석하고 있습니다. 최대 1분 소요될 수 있습니다.
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-5/6" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+            <Skeleton className="h-40 w-full" />
+          </div>
+        )}
+
+        {isError && (
+          <ErrorState
+            message="참고 정보를 불러오는 중 문제가 발생했습니다."
+            action={<Button variant="outline" size="sm" onClick={() => refetch()}>다시 시도</Button>}
+          />
+        )}
+
+        {data && <PublicDataReferenceContent data={data} />}
+      </div>
+    </div>
+  );
+}
+
+function PublicDataReferenceContent({
+  data,
+}: {
+  data: MarketPublicDataReferenceResponse;
+}) {
+  // 공공 데이터 자체 없음
+  if (!data.aiAnalyzed && data.dataAsOf === null) {
+    return (
+      <p className="py-4 text-center text-sm text-muted-foreground">
+        이 마켓의 공공 데이터가 아직 없습니다.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* 제목 + 기준일 */}
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-slate-800">{data.title}</p>
+        {data.dataAsOf && (
+          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-600">
+            {formatDate(data.dataAsOf)} 기준
+          </span>
+        )}
+      </div>
+
+      {/* Claude 실패 시 안내 배너 */}
+      {!data.aiAnalyzed && (
+        <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          AI 분석을 일시적으로 이용할 수 없습니다. 공공 데이터 원문을 직접 참고해 주세요.
+        </div>
+      )}
+
+      {/* AI 요약 — 하이라이트 박스 */}
+      {data.aiAnalyzed && (
+        <div className="rounded-lg border-l-4 border-blue-400 bg-blue-50 px-4 py-3">
+          <p className="text-xs font-semibold text-blue-600 mb-1">AI 요약</p>
+          <p className="text-sm leading-relaxed text-slate-700">{data.summary}</p>
+        </div>
+      )}
+
+      {/* 상세 내용 — 드롭다운 */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+          <svg
+            className="h-3.5 w-3.5 transition-transform group-open:rotate-90"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          상세 데이터 보기
+        </summary>
+        <div className="mt-3 rounded-lg bg-white p-3 ring-1 ring-slate-100">
+          <MarkdownContent content={data.content} />
+        </div>
+      </details>
+    </div>
+  );
 }
 
 function isReportAvailable(displayStatus: MarketDisplayStatus): boolean {
