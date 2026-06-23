@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import { ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 
 import { PageContainer } from "@/shared/ui/page-container";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -12,7 +12,7 @@ import { Button } from "@/shared/ui/button";
 import { usePointBalanceQuery, usePointHistoryQuery } from "@/entities/point/model/point.queries";
 import type { PointHistoryFilterType } from "@/entities/point/model/point.types";
 import { isIncreaseType } from "@/entities/point/lib/pointTransactionDirection";
-import { formatDateTime } from "@/shared/lib/formatDate";
+import { formatKoreanMonthDay, formatTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { cn } from "@/shared/lib/utils";
 
@@ -25,21 +25,6 @@ const FILTER_TABS: { value: PointHistoryFilterType | "ALL"; label: string }[] = 
   { value: "SETTLE", label: "정산" },
   { value: "REFUND", label: "환불" },
 ];
-
-// 거래 유형과 무관하게 증가/감소 방향으로만 아이콘을 통일한다.
-function getTransactionVisual(isIncrease: boolean) {
-  if (isIncrease) {
-    return {
-      Icon: ArrowUpRight,
-      iconClassName:
-        "bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 ring-1 ring-emerald-600/10",
-    };
-  }
-  return {
-    Icon: ArrowDownRight,
-    iconClassName: "bg-gradient-to-br from-rose-50 to-rose-100 text-rose-600 ring-1 ring-rose-600/10",
-  };
-}
 
 export default function PointHistoryPage() {
   const [filter, setFilter] = useState<PointHistoryFilterType | "ALL">("ALL");
@@ -102,7 +87,7 @@ export default function PointHistoryPage() {
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="flex items-center justify-between rounded-xl p-3">
                   <div className="flex items-center gap-3">
-                    <Skeleton className="h-11 w-11 rounded-full" />
+                    <Skeleton className="h-10 w-14 rounded-lg" />
                     <div className="space-y-1.5">
                       <Skeleton className="h-4 w-32" />
                       <Skeleton className="h-3 w-20" />
@@ -124,7 +109,6 @@ export default function PointHistoryPage() {
               <div className="space-y-1">
                 {data.content.map((item, index) => {
                   const isIncrease = isIncreaseType(item.type);
-                  const { Icon, iconClassName } = getTransactionVisual(isIncrease);
 
                   return (
                     <div
@@ -133,19 +117,14 @@ export default function PointHistoryPage() {
                       className="group flex animate-in items-center justify-between gap-4 rounded-xl border border-transparent p-3 fade-in-0 slide-in-from-bottom-2 duration-300 hover:border-slate-200 hover:bg-slate-50 hover:shadow-sm"
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105",
-                            iconClassName,
-                          )}
-                        >
-                          <Icon className="size-5" />
+                        <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-center text-xs font-semibold text-slate-500">
+                          {formatKoreanMonthDay(item.createdAt)}
                         </div>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-slate-900">
                             {item.reason ?? "-"}
                           </p>
-                          <p className="text-xs text-slate-400">{formatDateTime(item.createdAt)}</p>
+                          <p className="text-xs text-slate-400">{formatTime(item.createdAt)}</p>
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
