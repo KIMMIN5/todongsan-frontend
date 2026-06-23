@@ -11,6 +11,10 @@ const ADMIN_MARKET_ERROR_MESSAGES: Record<string, string> = {
   MARKET_REFUND_NOT_ALLOWED: "환불 대상이 아닌 예측 참여가 포함되어 있습니다.",
   MARKET_ALREADY_REFUNDED: "이미 환불이 완료되었습니다.",
   MARKET_REFUND_FAILED: "환불 처리 중 오류가 발생했습니다.",
+  MARKET_INVALID_OPTION:
+    "선택지 구성 또는 마감/판정/정산 일정이 올바르지 않습니다. 입력값을 다시 확인해 주세요.",
+  MARKET_INVALID_OPTION_RANGE: "선택지 구간이 겹치거나 비어 있는 부분이 있습니다.",
+  MARKET_INVALID_FEE_RATE: "수수료율은 0 이상 100 이하여야 합니다.",
 };
 
 /** MARKET_INVALID_STATUS는 서버가 내려준 구체적 사유 메시지를 그대로 노출한다. */

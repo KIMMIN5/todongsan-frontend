@@ -2,6 +2,7 @@ import type {
   AdminMarketProblemListParams,
   AdminMarketRefundDetailListParams,
   AdminMarketSettlementDetailListParams,
+  MarketCommentListParams,
   MarketListParams,
   MarketPriceHistoryParams,
 } from "./market.types";
@@ -65,4 +66,10 @@ export const marketKeys = {
     voidId: number,
     params: AdminMarketRefundDetailListParams = {},
   ) => [...marketKeys.adminRefundDetailLists(), marketId, voidId, params] as const,
+
+  comments: () => [...marketKeys.all, "comment"] as const,
+  commentsRoot: (marketId: number) =>
+    [...marketKeys.comments(), marketId] as const,
+  commentList: (marketId: number, params: MarketCommentListParams = {}) =>
+    [...marketKeys.commentsRoot(marketId), params] as const,
 };

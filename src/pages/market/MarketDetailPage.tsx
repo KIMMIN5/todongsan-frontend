@@ -1,19 +1,27 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useAuthStore } from "@/entities/auth/model/auth.store";
 import { useMarketDetailQuery } from "@/entities/market/model/useMarketDetailQuery";
+import { useMarketCommentListQuery } from "@/entities/market/model/useMarketCommentListQuery";
 import type {
+  MarketComment,
   MarketDisplayStatus,
   MarketStatus,
 } from "@/entities/market/model/market.types";
 import { getOptionColorMap } from "@/entities/market/lib/optionColor";
 import { MarketOptionList } from "@/entities/market/ui/MarketOptionList";
+import { MarketCommentList } from "@/entities/market/ui/MarketCommentList";
+import { MarketCommentPagination } from "@/entities/market/ui/MarketCommentPagination";
 import { MarketPriceHistorySection } from "@/entities/market/ui/MarketPriceHistorySection";
 import { CreateMarketPredictionPanel } from "@/features/market-prediction/create/ui/CreateMarketPredictionPanel";
+import { MarketCommentForm } from "@/features/create-market-comment/ui/MarketCommentForm";
+import { DeleteMarketCommentButton } from "@/features/delete-market-comment/ui/DeleteMarketCommentButton";
 import { MarketStatusBadge } from "@/entities/market/ui/MarketStatusBadge";
 import { useMyMarketPredictionQuery } from "@/entities/prediction/model/useMyMarketPredictionQuery";
 import { MyMarketPredictionCard } from "@/entities/prediction/ui/MyMarketPredictionCard";
 import { isApiError } from "@/shared/api/apiError";
+import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { formatDateTime } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { Button } from "@/shared/ui/button";
@@ -27,6 +35,8 @@ import { Skeleton } from "@/shared/ui/skeleton";
 export default function MarketDetailPage() {
   const { marketId } = useParams<{ marketId: string }>();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentMemberId = useAuthStore((state) => state.memberId);
+  const currentNickname = useAuthStore((state) => state.nickname);
   const isValidMarketId = marketId !== undefined && /^\d+$/.test(marketId);
   const parsedMarketId = isValidMarketId ? Number(marketId) : 0;
   const { data, error, isError, isLoading, refetch } =
@@ -144,6 +154,14 @@ export default function MarketDetailPage() {
                   </CardContent>
                 </Card>
               )}
+
+              <MarketCommentSection
+                marketId={data.marketId}
+                marketStatus={data.status}
+                isAuthenticated={isAuthenticated}
+                currentMemberId={currentMemberId}
+                currentNickname={currentNickname}
+              />
             </div>
 
             <aside className="lg:sticky lg:top-20">
@@ -266,6 +284,120 @@ function MyPredictionSection({
       marketDisplayStatus={marketDisplayStatus}
       optionColor={optionColor}
     />
+  );
+}
+
+const COMMENT_PAGE_SIZE = 10;
+
+type MarketCommentSectionProps = {
+  marketId: number;
+  marketStatus: MarketStatus;
+  isAuthenticated: boolean;
+  currentMemberId: number | null;
+  currentNickname: string | null;
+};
+
+function MarketCommentSection({
+  marketId,
+  marketStatus,
+  isAuthenticated,
+  currentMemberId,
+  currentNickname,
+}: MarketCommentSectionProps) {
+  const [page, setPage] = useState(0);
+
+  const { data, error, isError, isLoading, isFetching, refetch } =
+    useMarketCommentListQuery(marketId, { page, size: COMMENT_PAGE_SIZE });
+
+  function handleCommentDeleted() {
+    // 마지막 남은 댓글을 지운 page라면 이전 page로 이동해 빈 화면을 피한다.
+    if (data && data.content.length === 1 && page > 0) {
+      setPage((prev) => prev - 1);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>댓글</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <MarketCommentForm
+          marketId={marketId}
+          marketStatus={marketStatus}
+          isAuthenticated={isAuthenticated}
+          unauthenticatedFallback={<CommentLoginRequired />}
+        />
+
+        {isLoading && (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {isError && (
+          <ErrorState
+            title="댓글을 불러오지 못했습니다"
+            message={
+              isApiError(error)
+                ? error.message
+                : "댓글을 불러오는 중 문제가 발생했습니다."
+            }
+            action={<Button onClick={() => refetch()}>다시 시도</Button>}
+          />
+        )}
+
+        {data && data.content.length === 0 && (
+          <EmptyState
+            title="아직 댓글이 없습니다"
+            description="가장 먼저 의견을 남겨보세요."
+          />
+        )}
+
+        {data && data.content.length > 0 && (
+          <>
+            <MarketCommentList
+              comments={data.content}
+              currentMemberId={currentMemberId}
+              currentNickname={currentNickname}
+              renderDeleteSlot={(comment: MarketComment) => (
+                <DeleteMarketCommentButton
+                  marketId={marketId}
+                  commentId={comment.commentId}
+                  onDeleted={handleCommentDeleted}
+                />
+              )}
+            />
+
+            <MarketCommentPagination
+              page={page}
+              totalPages={data.totalPages}
+              isFetching={isFetching}
+              onPrev={() => setPage((prev) => Math.max(prev - 1, 0))}
+              onNext={() => setPage((prev) => prev + 1)}
+            />
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CommentLoginRequired() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
+      <p className="text-sm text-muted-foreground">
+        댓글을 작성하려면 로그인이 필요합니다.
+      </p>
+      <Button render={<Link to={ROUTE_PATH.LOGIN} />} variant="outline" size="sm">
+        로그인하기
+      </Button>
+    </div>
   );
 }
 
