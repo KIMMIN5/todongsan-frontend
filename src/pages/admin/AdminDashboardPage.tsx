@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BarChart2, Map, TrendingUp } from "lucide-react";
 
 import { useAdminMarketStatusCountsQuery } from "@/entities/market/model/useAdminMarketStatusCountsQuery";
 import { ROUTE_PATH } from "@/shared/constants/routePath";
@@ -144,6 +145,45 @@ export function AdminDashboardPage() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Insights */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">플랫폼 인사이트</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            {
+              to: ROUTE_PATH.ADMIN_INSIGHTS_OVERVIEW,
+              icon: <BarChart2 className="w-4 h-4" />,
+              label: "플랫폼 개요",
+              desc: "전체 KPI, 평판 분포, AI 리포트 통계",
+            },
+            {
+              to: ROUTE_PATH.ADMIN_INSIGHTS_REGION_MAP,
+              icon: <Map className="w-4 h-4" />,
+              label: "지역 가격 지도",
+              desc: "시도별 가격 지수 Choropleth",
+            },
+            {
+              to: ROUTE_PATH.ADMIN_INSIGHTS_ACTIVITY,
+              icon: <TrendingUp className="w-4 h-4" />,
+              label: "활동 트렌드",
+              desc: "주간 방문 인증·AI리포트·예측결과",
+            },
+          ].map(({ to, icon, label, desc }) => (
+            <Link
+              key={to}
+              to={to}
+              className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 transition-colors"
+            >
+              <span className="mt-0.5 text-slate-500">{icon}</span>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{label}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </PageContainer>
   );

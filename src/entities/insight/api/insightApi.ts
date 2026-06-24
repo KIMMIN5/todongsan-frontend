@@ -2,7 +2,11 @@ import type { ApiResponse } from "@/shared/api/apiResponse";
 import { httpClient } from "@/shared/api/httpClient";
 
 import type {
+  AdminActivityTrend,
+  AdminInsightsOverview,
+  AdminMarketDashboard,
   AdminMarketInsightPriceHistory,
+  AdminRegionsPriceMap,
   InsightReport,
   InsightReportStatusInfo,
   MarketPublicDataReferenceResponse,
@@ -141,6 +145,44 @@ export async function getAdminMarketInsightPriceHistory(
 ): Promise<AdminMarketInsightPriceHistory> {
   const response = await httpClient.get<ApiResponse<AdminMarketInsightPriceHistory>>(
     `/api/v1/admin/insights/markets/${marketId}/price-history`,
+  );
+  return response.data.data;
+}
+
+// ── 관리자 인사이트 신규 API ──────────────────────────────────────────
+
+const ADMIN_HEADER = { headers: { "X-Member-Role": "ADMIN" } };
+
+export async function getAdminMarketDashboard(
+  marketId: number,
+): Promise<AdminMarketDashboard> {
+  const response = await httpClient.get<ApiResponse<AdminMarketDashboard>>(
+    `/api/v1/admin/insights/markets/${marketId}/dashboard`,
+    ADMIN_HEADER,
+  );
+  return response.data.data;
+}
+
+export async function getAdminInsightsOverview(): Promise<AdminInsightsOverview> {
+  const response = await httpClient.get<ApiResponse<AdminInsightsOverview>>(
+    `/api/v1/admin/insights/overview`,
+    ADMIN_HEADER,
+  );
+  return response.data.data;
+}
+
+export async function getAdminRegionsPriceMap(): Promise<AdminRegionsPriceMap> {
+  const response = await httpClient.get<ApiResponse<AdminRegionsPriceMap>>(
+    `/api/v1/admin/insights/regions/price-map`,
+    ADMIN_HEADER,
+  );
+  return response.data.data;
+}
+
+export async function getAdminActivityTrend(): Promise<AdminActivityTrend> {
+  const response = await httpClient.get<ApiResponse<AdminActivityTrend>>(
+    `/api/v1/admin/insights/activity/trend`,
+    ADMIN_HEADER,
   );
   return response.data.data;
 }

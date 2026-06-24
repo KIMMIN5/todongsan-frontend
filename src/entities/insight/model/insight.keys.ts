@@ -17,4 +17,10 @@ export const insightKeys = {
   battleUserReportStatus: (battleId: number) => ["insights", "battleUserReportStatus", battleId] as const,
   report: (type: InsightReportType, referenceId: number) =>
     ["insights", "report", type, referenceId] as const,
+  // admin insights
+  adminMarketDashboard: (marketId: number) => ["insights", "adminMarketDashboard", marketId] as const,
+  adminBattleReportAnalysis: (battleId: number) => ["insights", "adminBattleReportAnalysis", battleId] as const,
+  adminOverview: () => ["insights", "adminOverview"] as const,
+  adminRegionsPriceMap: () => ["insights", "adminRegionsPriceMap"] as const,
+  adminActivityTrend: () => ["insights", "adminActivityTrend"] as const,
 };

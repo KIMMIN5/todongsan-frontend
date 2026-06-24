@@ -16,6 +16,10 @@ import MarketReportPage from "@/pages/market/MarketReportPage";
 import ReputationDetailPage from "@/pages/reputation/ReputationDetailPage";
 import AdminBattleReportPage from "@/pages/admin/battle/AdminBattleReportPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import AdminInsightsOverviewPage from "@/pages/admin/insights/AdminInsightsOverviewPage";
+import AdminInsightsActivityPage from "@/pages/admin/insights/AdminInsightsActivityPage";
+import AdminInsightsRegionMapPage from "@/pages/admin/insights/AdminInsightsRegionMapPage";
+import AdminMarketDashboardPage from "@/pages/admin/insights/AdminMarketDashboardPage";
 import AdminBattleListPage from "@/pages/admin/battle/AdminBattleListPage";
 import AdminBattleDetailPage from "@/pages/admin/battle/AdminBattleDetailPage";
 import AdminBattleAnalysisPage from "@/pages/admin/battle/AdminBattleAnalysisPage";
@@ -203,6 +207,38 @@ export const router = createBrowserRouter([
         element: (
           <AdminRoute>
             <AdminMarketResultPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/markets/:marketId/dashboard",
+        element: (
+          <AdminRoute>
+            <AdminMarketDashboardPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/insights/overview",
+        element: (
+          <AdminRoute>
+            <AdminInsightsOverviewPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/insights/activity",
+        element: (
+          <AdminRoute>
+            <AdminInsightsActivityPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/insights/regions/price-map",
+        element: (
+          <AdminRoute>
+            <AdminInsightsRegionMapPage />
           </AdminRoute>
         ),
       },

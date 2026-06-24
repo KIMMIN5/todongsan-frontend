@@ -28,4 +28,10 @@ export const ROUTE_PATH = {
   ADMIN_BATTLE_DETAIL: "/admin/battles/:battleId",
   ADMIN_BATTLE_ANALYSIS: "/admin/battles/:battleId/analysis",
   ADMIN_BATTLE_REPORT: "/admin/battles/:battleId/report",
+
+  // Admin Insights
+  ADMIN_INSIGHTS_OVERVIEW: "/admin/insights/overview",
+  ADMIN_INSIGHTS_ACTIVITY: "/admin/insights/activity",
+  ADMIN_INSIGHTS_REGION_MAP: "/admin/insights/regions/price-map",
+  ADMIN_MARKET_DASHBOARD: "/admin/markets/:marketId/dashboard",
 } as const;

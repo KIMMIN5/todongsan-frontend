@@ -25,6 +25,7 @@ export interface InsightReport extends BaseEntity {
   requestedAt: string;
   estimatedCompleteAt?: string;
   failureReason?: string;
+  analysisData?: BattleAnalysisData; // 배틀 리포트 전용 (status=DONE 일 때만 채워짐)
 }
 
 // 인사이트 리포트 요약 (목록용)
@@ -155,4 +156,110 @@ export type AdminMarketInsightPriceHistory = {
   dataType: MarketPriceDataType;
   priceHistory: MarketPriceHistoryItem[];
   latestPredictionDistribution: MarketPredictionDistributionItem[];
+};
+
+// ── 관리자 인사이트 대시보드 ──────────────────────────────────────────
+
+export type PriceDirection = "RISING" | "FALLING" | "FLAT";
+
+// Battle analysisData (기존 배틀 리포트 응답에 포함)
+export type BattleOptionDistributionItem = {
+  optionLabel: string;
+  count: number;
+  ratio: number; // 0~1
+};
+
+export type BattleAnalysisData = {
+  totalVotes: number;
+  optionDistribution: BattleOptionDistributionItem[];
+  genderByOption: Record<string, Record<string, number>>;   // {"찬성": {"MALE": 0.65, "FEMALE": 0.35}}
+  ageGroupByOption: Record<string, Record<string, number>>; // {"찬성": {"20대": 0.51, ...}}
+  visitCertifiedVotePattern: {
+    certifiedVoterCount: number;
+    certifiedOptionDistribution: BattleOptionDistributionItem[];
+  };
+};
+
+// GET /api/v1/admin/insights/markets/{marketId}/dashboard
+export type AdminMarketDashboard = {
+  marketId: number;
+  title: string;
+  regionSido: string | null;
+  regionSigu: string | null;
+  priceHistory: {
+    dataType: MarketPriceDataType;
+    records: MarketPriceHistoryItem[];
+    trendDirection: PriceDirection;
+    changeRate: number | null;
+  };
+  predictionDistribution: MarketPredictionDistributionItem[];
+  priceVsPredictionOverlay: {
+    priceTrendDirection: PriceDirection;
+    priceChangePct: number;
+    crowdPredictedCorrectly: boolean;
+    majorityOption: string;
+  } | null;
+  participantStats: {
+    totalParticipants: number;
+    totalPoolAmount: number;
+    genderDistribution: Record<string, number>;   // {"MALE": 0.61, "FEMALE": 0.39}
+    ageGroupDistribution: Record<string, number>; // {"20대": 0.44, "30대": 0.31, ...}
+    residenceMatchRatio: number | null;
+  } | null;
+  visitCertStats: {
+    certifiedVisitorCount: number;
+    gpsCertCount: number;
+    commentCertCount: number;
+  };
+};
+
+// GET /api/v1/admin/insights/overview
+export type AdminInsightsOverview = {
+  platformStats: {
+    totalMembersWithReputation: number;
+    avgReputationScore: number;
+    avgPredictionAccuracy: number;
+    totalVisitCertifications: number;
+    activeMarketsCount: number | null;
+    activeBattlesCount: number | null;
+  };
+  reputationDistribution: Record<string, number>; // {"0-20": 0.08, "21-40": 0.23, ...}
+  crowdIntelligenceScore: number;
+  visitCertMethodRatio: Record<string, number>;   // {"GPS": 0.68, "COMMENT": 0.32}
+  aiReportStats: {
+    totalDone: number;
+    totalFailed: number;
+    totalPending: number;
+    successRate: number; // 0~1
+  };
+};
+
+// GET /api/v1/admin/insights/regions/price-map
+export type RegionPriceMapItem = {
+  regionSido: string;
+  latestIndex: number | null;
+  prevIndex: number | null;
+  changePct: number | null;
+  direction: PriceDirection | null;
+  visitCertCount: number;
+};
+
+export type AdminRegionsPriceMap = {
+  asOf: string;
+  dataType: MarketPriceDataType;
+  regions: RegionPriceMapItem[];
+};
+
+// GET /api/v1/admin/insights/activity/trend
+export type ActivityTrendWeek = {
+  weekStart: string;              // "2026-03-31"
+  newVisitCerts: number;
+  aiReportsCompleted: number;
+  aiReportSuccessRate: number | null;
+  predictionResultsProcessed: number;
+};
+
+export type AdminActivityTrend = {
+  period: string;
+  weeklyTrend: ActivityTrendWeek[];
 };
