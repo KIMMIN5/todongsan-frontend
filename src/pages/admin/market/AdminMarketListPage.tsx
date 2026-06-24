@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useMarketListQuery } from "@/entities/market/model/useMarketListQuery";
 import { useAdminMarketStatusCountsQuery } from "@/entities/market/model/useAdminMarketStatusCountsQuery";
@@ -9,6 +9,7 @@ import type {
   MarketSummary,
 } from "@/entities/market/model/market.types";
 import { DISPLAY_STATUS_BADGE } from "@/entities/market/lib/marketDisplayStatusBadge";
+import { ROUTE_PATH } from "@/shared/constants/routePath";
 import { formatDate } from "@/shared/lib/formatDate";
 import { formatPointAmount } from "@/shared/lib/formatDecimal";
 import { Badge } from "@/shared/ui/badge";
@@ -95,7 +96,15 @@ export default function AdminMarketListPage() {
 
   return (
     <PageContainer>
-      <PageHeader title="마켓 관리" description="마켓 생성/활성화/정산 관리" />
+      <PageHeader
+        title="마켓 관리"
+        description="마켓 생성/활성화/정산 관리"
+        actions={
+          <Button render={<Link to={ROUTE_PATH.ADMIN_MARKET_CREATE} />} size="sm">
+            마켓 생성
+          </Button>
+        }
+      />
 
       <div className="space-y-6">
         <div className="flex flex-wrap gap-2">
